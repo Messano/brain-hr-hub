@@ -3,7 +3,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { AppLayout } from "./components/layouts/AppLayout";
+import Dashboard from "./pages/Dashboard";
+import Recruitment from "./pages/Recruitment";
+import Candidates from "./pages/Candidates";
+import Missions from "./pages/Missions";
+import Payroll from "./pages/Payroll";
+import Training from "./pages/Training";
+import Planning from "./pages/Planning";
+import Users from "./pages/Users";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -15,7 +25,18 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/recruitment" element={<Recruitment />} />
+            <Route path="/candidates" element={<Candidates />} />
+            <Route path="/missions" element={<Missions />} />
+            <Route path="/payroll" element={<Payroll />} />
+            <Route path="/training" element={<Training />} />
+            <Route path="/planning" element={<Planning />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
