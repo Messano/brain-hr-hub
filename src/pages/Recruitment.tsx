@@ -1,4 +1,5 @@
 import { Plus, Search, Filter, MapPin, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { KPICard } from "@/components/KPICard";
 
 export default function Recruitment() {
+  const navigate = useNavigate();
+  
   const jobOffers = [
     {
       title: "Développeur React Senior",
@@ -56,7 +59,10 @@ export default function Recruitment() {
           <h1 className="text-3xl font-bold">Recrutement</h1>
           <p className="text-muted-foreground">Gérez vos offres d'emploi et processus de recrutement</p>
         </div>
-        <Button className="flex items-center space-x-2">
+        <Button 
+          className="flex items-center space-x-2"
+          onClick={() => navigate("/recruitment/new")}
+        >
           <Plus className="w-4 h-4" />
           <span>Nouvelle offre</span>
         </Button>
