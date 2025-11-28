@@ -25,16 +25,16 @@ import {
 } from "@/components/ui/sidebar";
 
 const navigation = [
-  { title: "Tableau de bord", url: "/", icon: BarChart3 },
-  { title: "Recrutement", url: "/recruitment", icon: Users },
-  { title: "Candidatures", url: "/candidates", icon: UserCheck },
-  { title: "Missions & Contrats", url: "/missions", icon: Briefcase },
-  { title: "Paie", url: "/payroll", icon: CreditCard },
-  { title: "Formations", url: "/training", icon: BookOpen },
-  { title: "Planning", url: "/planning", icon: Calendar },
-  { title: "Utilisateurs", url: "/users", icon: Users },
-  { title: "Rapports & Export", url: "/reports", icon: FileText },
-  { title: "Paramètres", url: "/settings", icon: Settings },
+  { title: "Tableau de bord", url: "/admin", icon: BarChart3 },
+  { title: "Recrutement", url: "/admin/recruitment", icon: Users },
+  { title: "Candidatures", url: "/admin/candidates", icon: UserCheck },
+  { title: "Missions & Contrats", url: "/admin/missions", icon: Briefcase },
+  { title: "Paie", url: "/admin/payroll", icon: CreditCard },
+  { title: "Formations", url: "/admin/training", icon: BookOpen },
+  { title: "Planning", url: "/admin/planning", icon: Calendar },
+  { title: "Utilisateurs", url: "/admin/users", icon: Users },
+  { title: "Rapports & Export", url: "/admin/reports", icon: FileText },
+  { title: "Paramètres", url: "/admin/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -42,7 +42,7 @@ export function AppSidebar() {
   const location = useLocation();
 
   const isActive = (path: string) => {
-    return location.pathname === path || (path !== "/" && location.pathname.startsWith(path));
+    return location.pathname === path || (path !== "/admin" && location.pathname.startsWith(path));
   };
 
   return (
@@ -77,7 +77,7 @@ export function AppSidebar() {
                         : "hover:bg-muted"
                     }
                   >
-                    <NavLink to={item.url} end={item.url === "/"}>
+                    <NavLink to={item.url} end={item.url === "/admin"}>
                       <item.icon className="w-4 h-4" />
                       {open && <span>{item.title}</span>}
                     </NavLink>

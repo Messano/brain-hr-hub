@@ -61,7 +61,7 @@ export default function Recruitment() {
         </div>
         <Button 
           className="flex items-center space-x-2"
-          onClick={() => navigate("/recruitment/new")}
+          onClick={() => navigate("/admin/recruitment/new")}
         >
           <Plus className="w-4 h-4" />
           <span>Nouvelle offre</span>

@@ -18,7 +18,7 @@ export default function NewJobOffer() {
       title: "Offre créée",
       description: "L'offre d'emploi a été créée avec succès.",
     });
-    navigate("/recruitment");
+    navigate("/admin/recruitment");
   };
 
   return (
@@ -28,7 +28,7 @@ export default function NewJobOffer() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/recruitment")}
+            onClick={() => navigate("/admin/recruitment")}
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
@@ -170,7 +170,7 @@ export default function NewJobOffer() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate("/recruitment")}
+              onClick={() => navigate("/admin/recruitment")}
             >
               Annuler
             </Button>
