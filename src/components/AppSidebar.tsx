@@ -10,6 +10,7 @@ import {
   Settings,
   FileText,
   Brain,
+  Building2,
 } from "lucide-react";
 
 import {
@@ -26,6 +27,7 @@ import {
 
 const navigation = [
   { title: "Tableau de bord", url: "/admin", icon: BarChart3 },
+  { title: "Clients", url: "/admin/clients", icon: Building2 },
   { title: "Recrutement", url: "/admin/recruitment", icon: Users },
   { title: "Candidatures", url: "/admin/candidates", icon: UserCheck },
   { title: "Missions & Contrats", url: "/admin/missions", icon: Briefcase },
