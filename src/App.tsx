@@ -3,10 +3,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "./components/layouts/AppLayout";
 import Home from "./pages/Home";
 import PublicJobOffers from "./pages/PublicJobOffers";
 import JobOfferDetail from "./pages/JobOfferDetail";
+import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Recruitment from "./pages/Recruitment";
 import NewJobOffer from "./pages/NewJobOffer";
@@ -26,35 +29,40 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/offres" element={<PublicJobOffers />} />
-          <Route path="/offres/:id" element={<JobOfferDetail />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AppLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="recruitment" element={<Recruitment />} />
-            <Route path="recruitment/new" element={<NewJobOffer />} />
-            <Route path="candidates" element={<Candidates />} />
-            <Route path="missions" element={<Missions />} />
-            <Route path="payroll" element={<Payroll />} />
-            <Route path="training" element={<Training />} />
-            <Route path="planning" element={<Planning />} />
-            <Route path="users" element={<Users />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="clients" element={<Clients />} />
-          </Route>
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/offres" element={<PublicJobOffers />} />
+            <Route path="/offres/:id" element={<JobOfferDetail />} />
+            <Route path="/auth" element={<Auth />} />
+            
+            {/* Protected Admin Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/admin" element={<AppLayout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="recruitment" element={<Recruitment />} />
+                <Route path="recruitment/new" element={<NewJobOffer />} />
+                <Route path="candidates" element={<Candidates />} />
+                <Route path="missions" element={<Missions />} />
+                <Route path="payroll" element={<Payroll />} />
+                <Route path="training" element={<Training />} />
+                <Route path="planning" element={<Planning />} />
+                <Route path="users" element={<Users />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="clients" element={<Clients />} />
+              </Route>
+            </Route>
+            
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
