@@ -14,7 +14,562 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      candidates: {
+        Row: {
+          applied_at: string | null
+          cover_letter: string | null
+          cv_url: string | null
+          email: string
+          full_name: string
+          id: string
+          job_offer_id: string | null
+          notes: string | null
+          phone: string | null
+          rating: number | null
+          status: Database["public"]["Enums"]["candidate_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          cover_letter?: string | null
+          cv_url?: string | null
+          email: string
+          full_name: string
+          id?: string
+          job_offer_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          rating?: number | null
+          status?: Database["public"]["Enums"]["candidate_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          cover_letter?: string | null
+          cv_url?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          job_offer_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          rating?: number | null
+          status?: Database["public"]["Enums"]["candidate_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidates_job_offer_id_fkey"
+            columns: ["job_offer_id"]
+            isOneToOne: false
+            referencedRelation: "job_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          activation_stc: boolean | null
+          adresse: string | null
+          adresse_facturation: string | null
+          code: string
+          code_commercial: string | null
+          code_comptable: string | null
+          code_ice: string | null
+          coef_conge_paye: number | null
+          coef_heures_feriees: number | null
+          coef_heures_normales: number | null
+          coef_heures_sup_100: number | null
+          coef_heures_sup_25: number | null
+          coef_heures_sup_50: number | null
+          coef_indemnites_non_soumises: number | null
+          coef_indemnites_soumises: number | null
+          coef_prime: number | null
+          contact_email: string | null
+          contact_nom: string | null
+          contact_telephone: string | null
+          created_at: string | null
+          delai_reglement: number | null
+          duree_hebdomadaire: number | null
+          email: string | null
+          facturation_cp: boolean | null
+          horaires_travail: string | null
+          id: string
+          is_active: boolean | null
+          mode_edition_facture:
+            | Database["public"]["Enums"]["invoice_mode"]
+            | null
+          mode_reglement: Database["public"]["Enums"]["payment_mode"] | null
+          raison_sociale: string
+          telephone: string | null
+          titre: string | null
+          tva: Database["public"]["Enums"]["tva_type"] | null
+          type_client: Database["public"]["Enums"]["client_type"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          activation_stc?: boolean | null
+          adresse?: string | null
+          adresse_facturation?: string | null
+          code: string
+          code_commercial?: string | null
+          code_comptable?: string | null
+          code_ice?: string | null
+          coef_conge_paye?: number | null
+          coef_heures_feriees?: number | null
+          coef_heures_normales?: number | null
+          coef_heures_sup_100?: number | null
+          coef_heures_sup_25?: number | null
+          coef_heures_sup_50?: number | null
+          coef_indemnites_non_soumises?: number | null
+          coef_indemnites_soumises?: number | null
+          coef_prime?: number | null
+          contact_email?: string | null
+          contact_nom?: string | null
+          contact_telephone?: string | null
+          created_at?: string | null
+          delai_reglement?: number | null
+          duree_hebdomadaire?: number | null
+          email?: string | null
+          facturation_cp?: boolean | null
+          horaires_travail?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode_edition_facture?:
+            | Database["public"]["Enums"]["invoice_mode"]
+            | null
+          mode_reglement?: Database["public"]["Enums"]["payment_mode"] | null
+          raison_sociale: string
+          telephone?: string | null
+          titre?: string | null
+          tva?: Database["public"]["Enums"]["tva_type"] | null
+          type_client?: Database["public"]["Enums"]["client_type"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          activation_stc?: boolean | null
+          adresse?: string | null
+          adresse_facturation?: string | null
+          code?: string
+          code_commercial?: string | null
+          code_comptable?: string | null
+          code_ice?: string | null
+          coef_conge_paye?: number | null
+          coef_heures_feriees?: number | null
+          coef_heures_normales?: number | null
+          coef_heures_sup_100?: number | null
+          coef_heures_sup_25?: number | null
+          coef_heures_sup_50?: number | null
+          coef_indemnites_non_soumises?: number | null
+          coef_indemnites_soumises?: number | null
+          coef_prime?: number | null
+          contact_email?: string | null
+          contact_nom?: string | null
+          contact_telephone?: string | null
+          created_at?: string | null
+          delai_reglement?: number | null
+          duree_hebdomadaire?: number | null
+          email?: string | null
+          facturation_cp?: boolean | null
+          horaires_travail?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode_edition_facture?:
+            | Database["public"]["Enums"]["invoice_mode"]
+            | null
+          mode_reglement?: Database["public"]["Enums"]["payment_mode"] | null
+          raison_sociale?: string
+          telephone?: string | null
+          titre?: string | null
+          tva?: Database["public"]["Enums"]["tva_type"] | null
+          type_client?: Database["public"]["Enums"]["client_type"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          attendees: string[] | null
+          created_at: string | null
+          description: string | null
+          end_datetime: string | null
+          event_type: Database["public"]["Enums"]["event_type"] | null
+          id: string
+          location: string | null
+          related_mission_id: string | null
+          related_training_id: string | null
+          start_datetime: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          attendees?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          end_datetime?: string | null
+          event_type?: Database["public"]["Enums"]["event_type"] | null
+          id?: string
+          location?: string | null
+          related_mission_id?: string | null
+          related_training_id?: string | null
+          start_datetime: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          attendees?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          end_datetime?: string | null
+          event_type?: Database["public"]["Enums"]["event_type"] | null
+          id?: string
+          location?: string | null
+          related_mission_id?: string | null
+          related_training_id?: string | null
+          start_datetime?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_related_mission_id_fkey"
+            columns: ["related_mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_related_training_id_fkey"
+            columns: ["related_training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_offers: {
+        Row: {
+          benefits: string[] | null
+          client_id: string | null
+          created_at: string | null
+          department: string | null
+          description: string | null
+          expires_at: string | null
+          id: string
+          job_type: Database["public"]["Enums"]["job_type"] | null
+          location: string | null
+          published_at: string | null
+          requirements: string[] | null
+          responsibilities: string[] | null
+          salary_max: number | null
+          salary_min: number | null
+          status: Database["public"]["Enums"]["job_status"] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          benefits?: string[] | null
+          client_id?: string | null
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          job_type?: Database["public"]["Enums"]["job_type"] | null
+          location?: string | null
+          published_at?: string | null
+          requirements?: string[] | null
+          responsibilities?: string[] | null
+          salary_max?: number | null
+          salary_min?: number | null
+          status?: Database["public"]["Enums"]["job_status"] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          benefits?: string[] | null
+          client_id?: string | null
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          job_type?: Database["public"]["Enums"]["job_type"] | null
+          location?: string | null
+          published_at?: string | null
+          requirements?: string[] | null
+          responsibilities?: string[] | null
+          salary_max?: number | null
+          salary_min?: number | null
+          status?: Database["public"]["Enums"]["job_status"] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_offers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      missions: {
+        Row: {
+          candidate_id: string | null
+          client_id: string | null
+          contract_url: string | null
+          created_at: string | null
+          daily_rate: number | null
+          description: string | null
+          end_date: string | null
+          id: string
+          location: string | null
+          mission_type: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["mission_status"] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          candidate_id?: string | null
+          client_id?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          daily_rate?: number | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          mission_type?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["mission_status"] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          candidate_id?: string | null
+          client_id?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          daily_rate?: number | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          mission_type?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["mission_status"] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "missions_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "missions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payrolls: {
+        Row: {
+          base_salary: number
+          bonus: number | null
+          candidate_id: string | null
+          created_at: string | null
+          deductions: number | null
+          id: string
+          mission_id: string | null
+          net_salary: number
+          payment_date: string | null
+          period_end: string
+          period_start: string
+          status: Database["public"]["Enums"]["payroll_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_salary: number
+          bonus?: number | null
+          candidate_id?: string | null
+          created_at?: string | null
+          deductions?: number | null
+          id?: string
+          mission_id?: string | null
+          net_salary: number
+          payment_date?: string | null
+          period_end: string
+          period_start: string
+          status?: Database["public"]["Enums"]["payroll_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_salary?: number
+          bonus?: number | null
+          candidate_id?: string | null
+          created_at?: string | null
+          deductions?: number | null
+          id?: string
+          mission_id?: string | null
+          net_salary?: number
+          payment_date?: string | null
+          period_end?: string
+          period_start?: string
+          status?: Database["public"]["Enums"]["payroll_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payrolls_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payrolls_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          file_url: string | null
+          filters: Json | null
+          generated_at: string | null
+          id: string
+          name: string
+          report_type: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          file_url?: string | null
+          filters?: Json | null
+          generated_at?: string | null
+          id?: string
+          name: string
+          report_type?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          file_url?: string | null
+          filters?: Json | null
+          generated_at?: string | null
+          id?: string
+          name?: string
+          report_type?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      training_participants: {
+        Row: {
+          candidate_id: string | null
+          completed: boolean | null
+          completion_date: string | null
+          created_at: string | null
+          id: string
+          training_id: string | null
+        }
+        Insert: {
+          candidate_id?: string | null
+          completed?: boolean | null
+          completion_date?: string | null
+          created_at?: string | null
+          id?: string
+          training_id?: string | null
+        }
+        Update: {
+          candidate_id?: string | null
+          completed?: boolean | null
+          completion_date?: string | null
+          created_at?: string | null
+          id?: string
+          training_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_participants_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_participants_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trainings: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          duration_hours: number | null
+          end_date: string | null
+          id: string
+          location: string | null
+          max_participants: number | null
+          start_date: string
+          status: Database["public"]["Enums"]["training_status"] | null
+          title: string
+          trainer: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          max_participants?: number | null
+          start_date: string
+          status?: Database["public"]["Enums"]["training_status"] | null
+          title: string
+          trainer?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          max_participants?: number | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["training_status"] | null
+          title?: string
+          trainer?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +578,23 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      candidate_status:
+        | "new"
+        | "reviewing"
+        | "interview"
+        | "offer"
+        | "hired"
+        | "rejected"
+      client_type: "C1" | "C2" | "C9"
+      event_type: "meeting" | "interview" | "training" | "deadline" | "other"
+      invoice_mode: "global" | "salarie" | "commande"
+      job_status: "active" | "closed" | "draft"
+      job_type: "cdi" | "cdd" | "interim" | "freelance" | "stage"
+      mission_status: "active" | "completed" | "pending" | "cancelled"
+      payment_mode: "cheque" | "traite" | "virement"
+      payroll_status: "paid" | "pending" | "processing"
+      training_status: "planned" | "in_progress" | "completed" | "cancelled"
+      tva_type: "normale" | "exoneree" | "reduite"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +721,25 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      candidate_status: [
+        "new",
+        "reviewing",
+        "interview",
+        "offer",
+        "hired",
+        "rejected",
+      ],
+      client_type: ["C1", "C2", "C9"],
+      event_type: ["meeting", "interview", "training", "deadline", "other"],
+      invoice_mode: ["global", "salarie", "commande"],
+      job_status: ["active", "closed", "draft"],
+      job_type: ["cdi", "cdd", "interim", "freelance", "stage"],
+      mission_status: ["active", "completed", "pending", "cancelled"],
+      payment_mode: ["cheque", "traite", "virement"],
+      payroll_status: ["paid", "pending", "processing"],
+      training_status: ["planned", "in_progress", "completed", "cancelled"],
+      tva_type: ["normale", "exoneree", "reduite"],
+    },
   },
 } as const
