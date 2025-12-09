@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,9 +9,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
+// Liste des clients (à remplacer par des données de la base de données)
+const clients = [
+  { id: "CLI001", name: "TechCorp Solutions", type: "C1" },
+  { id: "CLI002", name: "Innovation Labs", type: "C2" },
+  { id: "CLI003", name: "Digital Services SARL", type: "C1" },
+  { id: "CLI004", name: "Consulting Pro SA", type: "C9" },
+  { id: "CLI005", name: "MarocTech Industries", type: "C2" },
+];
+
 export default function NewJobOffer() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [selectedClient, setSelectedClient] = useState<string>("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +57,32 @@ export default function NewJobOffer() {
               <CardTitle>Informations générales</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Sélecteur de client */}
+              <div className="space-y-2">
+                <Label htmlFor="client" className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  Client *
+                </Label>
+                <Select value={selectedClient} onValueChange={setSelectedClient} required>
+                  <SelectTrigger id="client">
+                    <SelectValue placeholder="Sélectionner un client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        <span className="flex items-center gap-2">
+                          <span className="font-medium">{client.name}</span>
+                          <span className="text-muted-foreground text-xs">({client.id} - {client.type})</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Le client qui a émis cette offre d'emploi
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="title">Titre du poste *</Label>
                 <Input
