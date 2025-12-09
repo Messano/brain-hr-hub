@@ -1,8 +1,15 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, Briefcase, LogIn } from "lucide-react";
+import { Briefcase, LogIn, LogOut, User } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export function PublicHeader() {
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
@@ -34,12 +41,27 @@ export function PublicHeader() {
           </nav>
 
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm" asChild className="hidden md:flex">
-              <Link to="/admin">
-                <LogIn className="w-4 h-4 mr-2" />
-                Espace Admin
-              </Link>
-            </Button>
+            {user ? (
+              <>
+                <Button variant="outline" size="sm" asChild className="hidden md:flex">
+                  <Link to="/admin">
+                    <User className="w-4 h-4 mr-2" />
+                    Espace Admin
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleSignOut} className="hidden md:flex">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Déconnexion
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" asChild className="hidden md:flex">
+                <Link to="/auth">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Connexion
+                </Link>
+              </Button>
+            )}
             <Button size="sm" className="bg-primary hover:bg-primary/90">
               Confiez-nous une mission
             </Button>
