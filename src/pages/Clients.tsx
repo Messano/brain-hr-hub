@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Building2, Plus, Search, Eye, Edit, Trash2, Phone, Mail, MapPin } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Building2, Plus, Search, Eye, Edit, Trash2, Phone, Mail, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,177 +30,47 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
-interface Client {
-  id: string;
-  code: string;
-  raisonSociale: string;
-  titre: "SA" | "SOC" | "SARL";
-  adresse: string;
-  adresseFacturation: string;
-  telephone: string;
-  email: string;
-  modeReglement: "Chèque" | "Traite" | "Virement";
-  delaiReglement: number;
-  codeComptable: string;
-  typeClient: "C1" | "C2" | "C9";
-  facturationCP: boolean;
-  codeICE: string;
-  coeffHeuresNormales: number;
-  coeffHS25: number;
-  coeffHS50: number;
-  coeffHS100: number;
-  coeffHeuresFeriees: number;
-  coeffIndemniteSoumise: number;
-  coeffIndemniteNonSoumise: number;
-  coeffCP: number;
-  coeffPrime: number;
-  dureeHebdo: number;
-  horaires: string;
-  activationSTC: boolean;
-  tva: "Normale" | "Exonérée" | "Réduite";
-  modeEditionFacture: "Global" | "Salarié" | "Commande";
-  nomContact: string;
-  codeCommercial: string;
-  status: "Actif" | "Inactif";
-}
+type Client = Tables<"clients">;
+type ClientInsert = TablesInsert<"clients">;
 
-const mockClients: Client[] = [
-  {
-    id: "1",
-    code: "CLI-001",
-    raisonSociale: "TechCorp Solutions",
-    titre: "SA",
-    adresse: "123 Avenue Mohammed V, Casablanca",
-    adresseFacturation: "123 Avenue Mohammed V, Casablanca",
-    telephone: "+212 522 123 456",
-    email: "contact@techcorp.ma",
-    modeReglement: "Virement",
-    delaiReglement: 30,
-    codeComptable: "411001",
-    typeClient: "C1",
-    facturationCP: true,
-    codeICE: "001234567000089",
-    coeffHeuresNormales: 1.0,
-    coeffHS25: 1.25,
-    coeffHS50: 1.50,
-    coeffHS100: 2.0,
-    coeffHeuresFeriees: 2.0,
-    coeffIndemniteSoumise: 1.0,
-    coeffIndemniteNonSoumise: 1.0,
-    coeffCP: 1.1,
-    coeffPrime: 1.0,
-    dureeHebdo: 44,
-    horaires: "08:00 - 17:00",
-    activationSTC: true,
-    tva: "Normale",
-    modeEditionFacture: "Salarié",
-    nomContact: "Ahmed Benali",
-    codeCommercial: "COM-001",
-    status: "Actif",
-  },
-  {
-    id: "2",
-    code: "CLI-002",
-    raisonSociale: "Industries Maroc",
-    titre: "SARL",
-    adresse: "45 Rue Al Fida, Rabat",
-    adresseFacturation: "BP 456, Rabat",
-    telephone: "+212 537 654 321",
-    email: "rh@industries-maroc.ma",
-    modeReglement: "Chèque",
-    delaiReglement: 60,
-    codeComptable: "411002",
-    typeClient: "C2",
-    facturationCP: false,
-    codeICE: "002345678000090",
-    coeffHeuresNormales: 1.0,
-    coeffHS25: 1.25,
-    coeffHS50: 1.50,
-    coeffHS100: 2.0,
-    coeffHeuresFeriees: 2.0,
-    coeffIndemniteSoumise: 1.0,
-    coeffIndemniteNonSoumise: 1.0,
-    coeffCP: 1.0,
-    coeffPrime: 1.0,
-    dureeHebdo: 44,
-    horaires: "07:00 - 16:00",
-    activationSTC: false,
-    tva: "Exonérée",
-    modeEditionFacture: "Global",
-    nomContact: "Fatima Zahra El Amrani",
-    codeCommercial: "COM-002",
-    status: "Actif",
-  },
-  {
-    id: "3",
-    code: "CLI-003",
-    raisonSociale: "Services Plus",
-    titre: "SOC",
-    adresse: "78 Boulevard Zerktouni, Marrakech",
-    adresseFacturation: "78 Boulevard Zerktouni, Marrakech",
-    telephone: "+212 524 789 012",
-    email: "direction@servicesplus.ma",
-    modeReglement: "Traite",
-    delaiReglement: 90,
-    codeComptable: "411003",
-    typeClient: "C9",
-    facturationCP: true,
-    codeICE: "003456789000091",
-    coeffHeuresNormales: 1.0,
-    coeffHS25: 1.25,
-    coeffHS50: 1.50,
-    coeffHS100: 2.0,
-    coeffHeuresFeriees: 2.0,
-    coeffIndemniteSoumise: 1.0,
-    coeffIndemniteNonSoumise: 1.0,
-    coeffCP: 1.15,
-    coeffPrime: 1.05,
-    dureeHebdo: 40,
-    horaires: "09:00 - 18:00",
-    activationSTC: true,
-    tva: "Réduite",
-    modeEditionFacture: "Commande",
-    nomContact: "Karim Tazi",
-    codeCommercial: "COM-001",
-    status: "Inactif",
-  },
-];
-
-const emptyClient: Omit<Client, "id" | "code"> = {
-  raisonSociale: "",
-  titre: "SA",
-  adresse: "",
-  adresseFacturation: "",
-  telephone: "",
-  email: "",
-  modeReglement: "Virement",
-  delaiReglement: 30,
-  codeComptable: "",
-  typeClient: "C1",
-  facturationCP: false,
-  codeICE: "",
-  coeffHeuresNormales: 1.0,
-  coeffHS25: 1.25,
-  coeffHS50: 1.50,
-  coeffHS100: 2.0,
-  coeffHeuresFeriees: 2.0,
-  coeffIndemniteSoumise: 1.0,
-  coeffIndemniteNonSoumise: 1.0,
-  coeffCP: 1.0,
-  coeffPrime: 1.0,
-  dureeHebdo: 44,
-  horaires: "",
-  activationSTC: false,
-  tva: "Normale",
-  modeEditionFacture: "Global",
-  nomContact: "",
-  codeCommercial: "",
-  status: "Actif",
+const emptyClient: Omit<ClientInsert, "code"> = {
+  raison_sociale: "",
+  titre: null,
+  adresse: null,
+  adresse_facturation: null,
+  telephone: null,
+  email: null,
+  mode_reglement: "virement",
+  delai_reglement: 30,
+  code_comptable: null,
+  type_client: "C1",
+  facturation_cp: false,
+  code_ice: null,
+  coef_heures_normales: 1.0,
+  coef_heures_sup_25: 1.25,
+  coef_heures_sup_50: 1.50,
+  coef_heures_sup_100: 2.0,
+  coef_heures_feriees: 2.0,
+  coef_indemnites_soumises: 1.0,
+  coef_indemnites_non_soumises: 1.0,
+  coef_conge_paye: 1.0,
+  coef_prime: 1.0,
+  duree_hebdomadaire: 44,
+  horaires_travail: null,
+  activation_stc: false,
+  tva: "normale",
+  mode_edition_facture: "global",
+  contact_nom: null,
+  code_commercial: null,
+  is_active: true,
 };
 
 export default function Clients() {
-  const [clients, setClients] = useState<Client[]>(mockClients);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -208,41 +78,133 @@ export default function Clients() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [newClient, setNewClient] = useState<Omit<Client, "id" | "code">>(emptyClient);
+  const [newClient, setNewClient] = useState<Omit<ClientInsert, "code">>(emptyClient);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error: any) {
+      toast.error("Erreur lors du chargement des clients: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredClients = clients.filter((client) => {
     const matchesSearch =
-      client.raisonSociale.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.raison_sociale.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || client.status === statusFilter;
-    const matchesType = typeFilter === "all" || client.typeClient === typeFilter;
+      (client.email?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && client.is_active) ||
+      (statusFilter === "inactive" && !client.is_active);
+    const matchesType = typeFilter === "all" || client.type_client === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const handleAddClient = () => {
-    const newCode = `CLI-${String(clients.length + 1).padStart(3, "0")}`;
-    const clientToAdd: Client = {
-      ...newClient,
-      id: String(clients.length + 1),
-      code: newCode,
-    };
-    setClients([...clients, clientToAdd]);
-    setNewClient(emptyClient);
-    setIsAddDialogOpen(false);
-    toast.success("Client ajouté avec succès");
+  const handleAddClient = async () => {
+    if (!newClient.raison_sociale.trim()) {
+      toast.error("La raison sociale est obligatoire");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("clients").insert({
+        ...newClient,
+        code: "", // Will be auto-generated by trigger
+      });
+
+      if (error) throw error;
+
+      toast.success("Client ajouté avec succès");
+      setNewClient(emptyClient);
+      setIsAddDialogOpen(false);
+      fetchClients();
+    } catch (error: any) {
+      toast.error("Erreur lors de l'ajout: " + error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleEditClient = () => {
+  const handleEditClient = async () => {
     if (!selectedClient) return;
-    setClients(clients.map((c) => (c.id === selectedClient.id ? selectedClient : c)));
-    setIsEditDialogOpen(false);
-    toast.success("Client modifié avec succès");
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          raison_sociale: selectedClient.raison_sociale,
+          titre: selectedClient.titre,
+          adresse: selectedClient.adresse,
+          adresse_facturation: selectedClient.adresse_facturation,
+          telephone: selectedClient.telephone,
+          email: selectedClient.email,
+          mode_reglement: selectedClient.mode_reglement,
+          delai_reglement: selectedClient.delai_reglement,
+          code_comptable: selectedClient.code_comptable,
+          type_client: selectedClient.type_client,
+          facturation_cp: selectedClient.facturation_cp,
+          code_ice: selectedClient.code_ice,
+          coef_heures_normales: selectedClient.coef_heures_normales,
+          coef_heures_sup_25: selectedClient.coef_heures_sup_25,
+          coef_heures_sup_50: selectedClient.coef_heures_sup_50,
+          coef_heures_sup_100: selectedClient.coef_heures_sup_100,
+          coef_heures_feriees: selectedClient.coef_heures_feriees,
+          coef_indemnites_soumises: selectedClient.coef_indemnites_soumises,
+          coef_indemnites_non_soumises: selectedClient.coef_indemnites_non_soumises,
+          coef_conge_paye: selectedClient.coef_conge_paye,
+          coef_prime: selectedClient.coef_prime,
+          duree_hebdomadaire: selectedClient.duree_hebdomadaire,
+          horaires_travail: selectedClient.horaires_travail,
+          activation_stc: selectedClient.activation_stc,
+          tva: selectedClient.tva,
+          mode_edition_facture: selectedClient.mode_edition_facture,
+          contact_nom: selectedClient.contact_nom,
+          code_commercial: selectedClient.code_commercial,
+          is_active: selectedClient.is_active,
+        })
+        .eq("id", selectedClient.id);
+
+      if (error) throw error;
+
+      toast.success("Client modifié avec succès");
+      setIsEditDialogOpen(false);
+      fetchClients();
+    } catch (error: any) {
+      toast.error("Erreur lors de la modification: " + error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDeleteClient = (id: string) => {
-    setClients(clients.filter((c) => c.id !== id));
-    toast.success("Client supprimé avec succès");
+  const handleDeleteClient = async (id: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce client ?")) return;
+
+    try {
+      const { error } = await supabase.from("clients").delete().eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Client supprimé avec succès");
+      fetchClients();
+    } catch (error: any) {
+      toast.error("Erreur lors de la suppression: " + error.message);
+    }
   };
 
   const ClientForm = ({
@@ -250,7 +212,7 @@ export default function Clients() {
     setClient,
     isEdit = false,
   }: {
-    client: Omit<Client, "id" | "code"> | Client;
+    client: Omit<ClientInsert, "code"> | Client;
     setClient: (client: any) => void;
     isEdit?: boolean;
   }) => (
@@ -268,21 +230,19 @@ export default function Clients() {
           <div className="space-y-2">
             <Label>Raison Sociale *</Label>
             <Input
-              value={client.raisonSociale}
-              onChange={(e) => setClient({ ...client, raisonSociale: e.target.value })}
+              value={client.raison_sociale}
+              onChange={(e) => setClient({ ...client, raison_sociale: e.target.value })}
               placeholder="Nom de la société"
             />
           </div>
           <div className="space-y-2">
-            <Label>Titre *</Label>
+            <Label>Titre</Label>
             <Select
-              value={client.titre}
-              onValueChange={(value: "SA" | "SOC" | "SARL") =>
-                setClient({ ...client, titre: value })
-              }
+              value={client.titre || ""}
+              onValueChange={(value) => setClient({ ...client, titre: value || null })}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="SA">SA</SelectItem>
@@ -292,51 +252,51 @@ export default function Clients() {
             </Select>
           </div>
           <div className="space-y-2 col-span-2">
-            <Label>Adresse *</Label>
+            <Label>Adresse</Label>
             <Input
-              value={client.adresse}
-              onChange={(e) => setClient({ ...client, adresse: e.target.value })}
+              value={client.adresse || ""}
+              onChange={(e) => setClient({ ...client, adresse: e.target.value || null })}
               placeholder="Adresse complète"
             />
           </div>
           <div className="space-y-2 col-span-2">
             <Label>Adresse de facturation</Label>
             <Input
-              value={client.adresseFacturation}
-              onChange={(e) => setClient({ ...client, adresseFacturation: e.target.value })}
+              value={client.adresse_facturation || ""}
+              onChange={(e) => setClient({ ...client, adresse_facturation: e.target.value || null })}
               placeholder="Si différente de l'adresse principale"
             />
           </div>
           <div className="space-y-2">
-            <Label>Téléphone *</Label>
+            <Label>Téléphone</Label>
             <Input
-              value={client.telephone}
-              onChange={(e) => setClient({ ...client, telephone: e.target.value })}
+              value={client.telephone || ""}
+              onChange={(e) => setClient({ ...client, telephone: e.target.value || null })}
               placeholder="+212 5XX XXX XXX"
             />
           </div>
           <div className="space-y-2">
-            <Label>E-mail *</Label>
+            <Label>E-mail</Label>
             <Input
               type="email"
-              value={client.email}
-              onChange={(e) => setClient({ ...client, email: e.target.value })}
+              value={client.email || ""}
+              onChange={(e) => setClient({ ...client, email: e.target.value || null })}
               placeholder="contact@societe.ma"
             />
           </div>
           <div className="space-y-2">
-            <Label>Nom du contact *</Label>
+            <Label>Nom du contact</Label>
             <Input
-              value={client.nomContact}
-              onChange={(e) => setClient({ ...client, nomContact: e.target.value })}
+              value={client.contact_nom || ""}
+              onChange={(e) => setClient({ ...client, contact_nom: e.target.value || null })}
               placeholder="Responsable du site"
             />
           </div>
           <div className="space-y-2">
             <Label>Code commercial</Label>
             <Input
-              value={client.codeCommercial}
-              onChange={(e) => setClient({ ...client, codeCommercial: e.target.value })}
+              value={client.code_commercial || ""}
+              onChange={(e) => setClient({ ...client, code_commercial: e.target.value || null })}
               placeholder="COM-XXX"
             />
           </div>
@@ -348,27 +308,27 @@ export default function Clients() {
           <div className="space-y-2">
             <Label>Mode de règlement</Label>
             <Select
-              value={client.modeReglement}
-              onValueChange={(value: "Chèque" | "Traite" | "Virement") =>
-                setClient({ ...client, modeReglement: value })
+              value={client.mode_reglement || "virement"}
+              onValueChange={(value: "cheque" | "traite" | "virement") =>
+                setClient({ ...client, mode_reglement: value })
               }
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Chèque">Chèque</SelectItem>
-                <SelectItem value="Traite">Traite</SelectItem>
-                <SelectItem value="Virement">Virement</SelectItem>
+                <SelectItem value="cheque">Chèque</SelectItem>
+                <SelectItem value="traite">Traite</SelectItem>
+                <SelectItem value="virement">Virement</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label>Délai de règlement (jours)</Label>
             <Select
-              value={String(client.delaiReglement)}
+              value={String(client.delai_reglement || 30)}
               onValueChange={(value) =>
-                setClient({ ...client, delaiReglement: parseInt(value) })
+                setClient({ ...client, delai_reglement: parseInt(value) })
               }
             >
               <SelectTrigger>
@@ -385,17 +345,17 @@ export default function Clients() {
           <div className="space-y-2">
             <Label>Code comptable (R.Cpt)</Label>
             <Input
-              value={client.codeComptable}
-              onChange={(e) => setClient({ ...client, codeComptable: e.target.value })}
+              value={client.code_comptable || ""}
+              onChange={(e) => setClient({ ...client, code_comptable: e.target.value || null })}
               placeholder="411XXX"
             />
           </div>
           <div className="space-y-2">
             <Label>Type de client</Label>
             <Select
-              value={client.typeClient}
+              value={client.type_client || "C1"}
               onValueChange={(value: "C1" | "C2" | "C9") =>
-                setClient({ ...client, typeClient: value })
+                setClient({ ...client, type_client: value })
               }
             >
               <SelectTrigger>
@@ -411,16 +371,16 @@ export default function Clients() {
           <div className="space-y-2">
             <Label>Code ICE</Label>
             <Input
-              value={client.codeICE}
-              onChange={(e) => setClient({ ...client, codeICE: e.target.value })}
+              value={client.code_ice || ""}
+              onChange={(e) => setClient({ ...client, code_ice: e.target.value || null })}
               placeholder="00XXXXXXXXXX00XX"
             />
           </div>
           <div className="flex items-center space-x-2 pt-6">
             <Switch
-              checked={client.facturationCP}
+              checked={client.facturation_cp || false}
               onCheckedChange={(checked) =>
-                setClient({ ...client, facturationCP: checked })
+                setClient({ ...client, facturation_cp: checked })
               }
             />
             <Label>Facturation Congés payés (CP)</Label>
@@ -435,9 +395,9 @@ export default function Clients() {
             <Input
               type="number"
               step="0.01"
-              value={client.coeffHeuresNormales}
+              value={client.coef_heures_normales || 1}
               onChange={(e) =>
-                setClient({ ...client, coeffHeuresNormales: parseFloat(e.target.value) })
+                setClient({ ...client, coef_heures_normales: parseFloat(e.target.value) || 1 })
               }
             />
           </div>
@@ -446,9 +406,9 @@ export default function Clients() {
             <Input
               type="number"
               step="0.01"
-              value={client.coeffHS25}
+              value={client.coef_heures_sup_25 || 1.25}
               onChange={(e) =>
-                setClient({ ...client, coeffHS25: parseFloat(e.target.value) })
+                setClient({ ...client, coef_heures_sup_25: parseFloat(e.target.value) || 1.25 })
               }
             />
           </div>
@@ -457,9 +417,9 @@ export default function Clients() {
             <Input
               type="number"
               step="0.01"
-              value={client.coeffHS50}
+              value={client.coef_heures_sup_50 || 1.5}
               onChange={(e) =>
-                setClient({ ...client, coeffHS50: parseFloat(e.target.value) })
+                setClient({ ...client, coef_heures_sup_50: parseFloat(e.target.value) || 1.5 })
               }
             />
           </div>
@@ -468,9 +428,9 @@ export default function Clients() {
             <Input
               type="number"
               step="0.01"
-              value={client.coeffHS100}
+              value={client.coef_heures_sup_100 || 2}
               onChange={(e) =>
-                setClient({ ...client, coeffHS100: parseFloat(e.target.value) })
+                setClient({ ...client, coef_heures_sup_100: parseFloat(e.target.value) || 2 })
               }
             />
           </div>
@@ -479,9 +439,9 @@ export default function Clients() {
             <Input
               type="number"
               step="0.01"
-              value={client.coeffHeuresFeriees}
+              value={client.coef_heures_feriees || 2}
               onChange={(e) =>
-                setClient({ ...client, coeffHeuresFeriees: parseFloat(e.target.value) })
+                setClient({ ...client, coef_heures_feriees: parseFloat(e.target.value) || 2 })
               }
             />
           </div>
@@ -490,9 +450,9 @@ export default function Clients() {
             <Input
               type="number"
               step="0.01"
-              value={client.coeffIndemniteSoumise}
+              value={client.coef_indemnites_soumises || 1}
               onChange={(e) =>
-                setClient({ ...client, coeffIndemniteSoumise: parseFloat(e.target.value) })
+                setClient({ ...client, coef_indemnites_soumises: parseFloat(e.target.value) || 1 })
               }
             />
           </div>
@@ -501,11 +461,11 @@ export default function Clients() {
             <Input
               type="number"
               step="0.01"
-              value={client.coeffIndemniteNonSoumise}
+              value={client.coef_indemnites_non_soumises || 1}
               onChange={(e) =>
                 setClient({
                   ...client,
-                  coeffIndemniteNonSoumise: parseFloat(e.target.value),
+                  coef_indemnites_non_soumises: parseFloat(e.target.value) || 1,
                 })
               }
             />
@@ -515,9 +475,9 @@ export default function Clients() {
             <Input
               type="number"
               step="0.01"
-              value={client.coeffCP}
+              value={client.coef_conge_paye || 1}
               onChange={(e) =>
-                setClient({ ...client, coeffCP: parseFloat(e.target.value) })
+                setClient({ ...client, coef_conge_paye: parseFloat(e.target.value) || 1 })
               }
             />
           </div>
@@ -526,9 +486,9 @@ export default function Clients() {
             <Input
               type="number"
               step="0.01"
-              value={client.coeffPrime}
+              value={client.coef_prime || 1}
               onChange={(e) =>
-                setClient({ ...client, coeffPrime: parseFloat(e.target.value) })
+                setClient({ ...client, coef_prime: parseFloat(e.target.value) || 1 })
               }
             />
           </div>
@@ -541,17 +501,17 @@ export default function Clients() {
             <Label>Durée hebdomadaire (heures)</Label>
             <Input
               type="number"
-              value={client.dureeHebdo}
+              value={client.duree_hebdomadaire || 44}
               onChange={(e) =>
-                setClient({ ...client, dureeHebdo: parseInt(e.target.value) })
+                setClient({ ...client, duree_hebdomadaire: parseInt(e.target.value) || 44 })
               }
             />
           </div>
           <div className="space-y-2">
             <Label>Horaires de travail</Label>
             <Input
-              value={client.horaires}
-              onChange={(e) => setClient({ ...client, horaires: e.target.value })}
+              value={client.horaires_travail || ""}
+              onChange={(e) => setClient({ ...client, horaires_travail: e.target.value || null })}
               placeholder="08:00 - 17:00"
             />
           </div>
@@ -562,9 +522,9 @@ export default function Clients() {
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center space-x-2">
             <Switch
-              checked={client.activationSTC}
+              checked={client.activation_stc || false}
               onCheckedChange={(checked) =>
-                setClient({ ...client, activationSTC: checked })
+                setClient({ ...client, activation_stc: checked })
               }
             />
             <Label>Activation STC</Label>
@@ -572,8 +532,8 @@ export default function Clients() {
           <div className="space-y-2">
             <Label>TVA</Label>
             <Select
-              value={client.tva}
-              onValueChange={(value: "Normale" | "Exonérée" | "Réduite") =>
+              value={client.tva || "normale"}
+              onValueChange={(value: "normale" | "exoneree" | "reduite") =>
                 setClient({ ...client, tva: value })
               }
             >
@@ -581,27 +541,27 @@ export default function Clients() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Normale">Normale (20%)</SelectItem>
-                <SelectItem value="Exonérée">Exonérée</SelectItem>
-                <SelectItem value="Réduite">Réduite (7%)</SelectItem>
+                <SelectItem value="normale">Normale (20%)</SelectItem>
+                <SelectItem value="exoneree">Exonérée</SelectItem>
+                <SelectItem value="reduite">Réduite (7%)</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label>Mode d'édition facture</Label>
             <Select
-              value={client.modeEditionFacture}
-              onValueChange={(value: "Global" | "Salarié" | "Commande") =>
-                setClient({ ...client, modeEditionFacture: value })
+              value={client.mode_edition_facture || "global"}
+              onValueChange={(value: "global" | "salarie" | "commande") =>
+                setClient({ ...client, mode_edition_facture: value })
               }
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Global">Global</SelectItem>
-                <SelectItem value="Salarié">Par salarié</SelectItem>
-                <SelectItem value="Commande">Par commande</SelectItem>
+                <SelectItem value="global">Global</SelectItem>
+                <SelectItem value="salarie">Par salarié</SelectItem>
+                <SelectItem value="commande">Par commande</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -609,17 +569,17 @@ export default function Clients() {
             <div className="space-y-2">
               <Label>Statut</Label>
               <Select
-                value={(client as Client).status}
-                onValueChange={(value: "Actif" | "Inactif") =>
-                  setClient({ ...client, status: value })
+                value={(client as Client).is_active ? "active" : "inactive"}
+                onValueChange={(value) =>
+                  setClient({ ...client, is_active: value === "active" })
                 }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Actif">Actif</SelectItem>
-                  <SelectItem value="Inactif">Inactif</SelectItem>
+                  <SelectItem value="active">Actif</SelectItem>
+                  <SelectItem value="inactive">Inactif</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -628,6 +588,41 @@ export default function Clients() {
       </TabsContent>
     </Tabs>
   );
+
+  const formatPaymentMode = (mode: string | null) => {
+    switch (mode) {
+      case "cheque": return "Chèque";
+      case "traite": return "Traite";
+      case "virement": return "Virement";
+      default: return mode || "-";
+    }
+  };
+
+  const formatTva = (tva: string | null) => {
+    switch (tva) {
+      case "normale": return "Normale (20%)";
+      case "exoneree": return "Exonérée";
+      case "reduite": return "Réduite (7%)";
+      default: return tva || "-";
+    }
+  };
+
+  const formatInvoiceMode = (mode: string | null) => {
+    switch (mode) {
+      case "global": return "Global";
+      case "salarie": return "Par salarié";
+      case "commande": return "Par commande";
+      default: return mode || "-";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -655,7 +650,10 @@ export default function Clients() {
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Annuler
               </Button>
-              <Button onClick={handleAddClient}>Ajouter</Button>
+              <Button onClick={handleAddClient} disabled={saving}>
+                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Ajouter
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -679,7 +677,7 @@ export default function Clients() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {clients.filter((c) => c.status === "Actif").length}
+              {clients.filter((c) => c.is_active).length}
             </div>
           </CardContent>
         </Card>
@@ -690,7 +688,7 @@ export default function Clients() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {clients.filter((c) => c.status === "Inactif").length}
+              {clients.filter((c) => !c.is_active).length}
             </div>
           </CardContent>
         </Card>
@@ -701,7 +699,7 @@ export default function Clients() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {clients.filter((c) => c.typeClient === "C1").length}
+              {clients.filter((c) => c.type_client === "C1").length}
             </div>
           </CardContent>
         </Card>
@@ -726,8 +724,8 @@ export default function Clients() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="Actif">Actif</SelectItem>
-                <SelectItem value="Inactif">Inactif</SelectItem>
+                <SelectItem value="active">Actif</SelectItem>
+                <SelectItem value="inactive">Inactif</SelectItem>
               </SelectContent>
             </Select>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -761,81 +759,89 @@ export default function Clients() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredClients.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.code}</TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{client.raisonSociale}</p>
-                      <p className="text-sm text-muted-foreground">{client.titre}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1 text-sm">
-                        <Mail className="w-3 h-3" />
-                        {client.email}
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Phone className="w-3 h-3" />
-                        {client.telephone}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{client.typeClient}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <p>{client.modeReglement}</p>
-                      <p className="text-muted-foreground">{client.delaiReglement}j</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={client.status === "Actif" ? "default" : "secondary"}
-                      className={
-                        client.status === "Actif"
-                          ? "bg-green-100 text-green-800 hover:bg-green-100"
-                          : "bg-red-100 text-red-800 hover:bg-red-100"
-                      }
-                    >
-                      {client.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedClient(client);
-                          setIsViewDialogOpen(true);
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedClient(client);
-                          setIsEditDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteClient(client.id)}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </div>
+              {filteredClients.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    Aucun client trouvé
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredClients.map((client) => (
+                  <TableRow key={client.id}>
+                    <TableCell className="font-medium">{client.code}</TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{client.raison_sociale}</p>
+                        <p className="text-sm text-muted-foreground">{client.titre || "-"}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1 text-sm">
+                          <Mail className="w-3 h-3" />
+                          {client.email || "-"}
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Phone className="w-3 h-3" />
+                          {client.telephone || "-"}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{client.type_client}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <p>{formatPaymentMode(client.mode_reglement)}</p>
+                        <p className="text-muted-foreground">{client.delai_reglement}j</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={client.is_active ? "default" : "secondary"}
+                        className={
+                          client.is_active
+                            ? "bg-green-100 text-green-800 hover:bg-green-100"
+                            : "bg-red-100 text-red-800 hover:bg-red-100"
+                        }
+                      >
+                        {client.is_active ? "Actif" : "Inactif"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedClient(client);
+                            setIsViewDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedClient(client);
+                            setIsEditDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteClient(client.id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -864,44 +870,44 @@ export default function Clients() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground">Raison Sociale</Label>
-                      <p className="font-medium">{selectedClient.raisonSociale}</p>
+                      <p className="font-medium">{selectedClient.raison_sociale}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Titre</Label>
-                      <p className="font-medium">{selectedClient.titre}</p>
+                      <p className="font-medium">{selectedClient.titre || "-"}</p>
                     </div>
                     <div className="col-span-2">
                       <Label className="text-muted-foreground">Adresse</Label>
                       <p className="font-medium flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
-                        {selectedClient.adresse}
+                        {selectedClient.adresse || "-"}
                       </p>
                     </div>
                     <div className="col-span-2">
                       <Label className="text-muted-foreground">Adresse de facturation</Label>
-                      <p className="font-medium">{selectedClient.adresseFacturation || "-"}</p>
+                      <p className="font-medium">{selectedClient.adresse_facturation || "-"}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Téléphone</Label>
                       <p className="font-medium flex items-center gap-2">
                         <Phone className="w-4 h-4" />
-                        {selectedClient.telephone}
+                        {selectedClient.telephone || "-"}
                       </p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">E-mail</Label>
                       <p className="font-medium flex items-center gap-2">
                         <Mail className="w-4 h-4" />
-                        {selectedClient.email}
+                        {selectedClient.email || "-"}
                       </p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Nom du contact</Label>
-                      <p className="font-medium">{selectedClient.nomContact}</p>
+                      <p className="font-medium">{selectedClient.contact_nom || "-"}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Code commercial</Label>
-                      <p className="font-medium">{selectedClient.codeCommercial || "-"}</p>
+                      <p className="font-medium">{selectedClient.code_commercial || "-"}</p>
                     </div>
                   </div>
                 </TabsContent>
@@ -910,28 +916,28 @@ export default function Clients() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground">Mode de règlement</Label>
-                      <p className="font-medium">{selectedClient.modeReglement}</p>
+                      <p className="font-medium">{formatPaymentMode(selectedClient.mode_reglement)}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Délai de règlement</Label>
-                      <p className="font-medium">{selectedClient.delaiReglement} jours</p>
+                      <p className="font-medium">{selectedClient.delai_reglement} jours</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Code comptable</Label>
-                      <p className="font-medium">{selectedClient.codeComptable}</p>
+                      <p className="font-medium">{selectedClient.code_comptable || "-"}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Type de client</Label>
-                      <Badge variant="outline">{selectedClient.typeClient}</Badge>
+                      <Badge variant="outline">{selectedClient.type_client}</Badge>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Code ICE</Label>
-                      <p className="font-medium">{selectedClient.codeICE}</p>
+                      <p className="font-medium">{selectedClient.code_ice || "-"}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Facturation CP</Label>
-                      <Badge variant={selectedClient.facturationCP ? "default" : "secondary"}>
-                        {selectedClient.facturationCP ? "Oui" : "Non"}
+                      <Badge variant={selectedClient.facturation_cp ? "default" : "secondary"}>
+                        {selectedClient.facturation_cp ? "Oui" : "Non"}
                       </Badge>
                     </div>
                   </div>
@@ -941,39 +947,39 @@ export default function Clients() {
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <Label className="text-muted-foreground">Heures normales</Label>
-                      <p className="font-medium">{selectedClient.coeffHeuresNormales}</p>
+                      <p className="font-medium">{selectedClient.coef_heures_normales}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">HS 25%</Label>
-                      <p className="font-medium">{selectedClient.coeffHS25}</p>
+                      <p className="font-medium">{selectedClient.coef_heures_sup_25}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">HS 50%</Label>
-                      <p className="font-medium">{selectedClient.coeffHS50}</p>
+                      <p className="font-medium">{selectedClient.coef_heures_sup_50}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">HS 100%</Label>
-                      <p className="font-medium">{selectedClient.coeffHS100}</p>
+                      <p className="font-medium">{selectedClient.coef_heures_sup_100}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Heures fériées</Label>
-                      <p className="font-medium">{selectedClient.coeffHeuresFeriees}</p>
+                      <p className="font-medium">{selectedClient.coef_heures_feriees}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Indemnités soumises</Label>
-                      <p className="font-medium">{selectedClient.coeffIndemniteSoumise}</p>
+                      <p className="font-medium">{selectedClient.coef_indemnites_soumises}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Indemnités non soumises</Label>
-                      <p className="font-medium">{selectedClient.coeffIndemniteNonSoumise}</p>
+                      <p className="font-medium">{selectedClient.coef_indemnites_non_soumises}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Congé payé</Label>
-                      <p className="font-medium">{selectedClient.coeffCP}</p>
+                      <p className="font-medium">{selectedClient.coef_conge_paye}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Coefficient Prime</Label>
-                      <p className="font-medium">{selectedClient.coeffPrime}</p>
+                      <Label className="text-muted-foreground">Prime</Label>
+                      <p className="font-medium">{selectedClient.coef_prime}</p>
                     </div>
                   </div>
                 </TabsContent>
@@ -982,11 +988,11 @@ export default function Clients() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground">Durée hebdomadaire</Label>
-                      <p className="font-medium">{selectedClient.dureeHebdo}h</p>
+                      <p className="font-medium">{selectedClient.duree_hebdomadaire} heures</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Horaires</Label>
-                      <p className="font-medium">{selectedClient.horaires || "-"}</p>
+                      <Label className="text-muted-foreground">Horaires de travail</Label>
+                      <p className="font-medium">{selectedClient.horaires_travail || "-"}</p>
                     </div>
                   </div>
                 </TabsContent>
@@ -995,29 +1001,29 @@ export default function Clients() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground">Activation STC</Label>
-                      <Badge variant={selectedClient.activationSTC ? "default" : "secondary"}>
-                        {selectedClient.activationSTC ? "Oui" : "Non"}
+                      <Badge variant={selectedClient.activation_stc ? "default" : "secondary"}>
+                        {selectedClient.activation_stc ? "Oui" : "Non"}
                       </Badge>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">TVA</Label>
-                      <p className="font-medium">{selectedClient.tva}</p>
+                      <p className="font-medium">{formatTva(selectedClient.tva)}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Mode édition facture</Label>
-                      <p className="font-medium">{selectedClient.modeEditionFacture}</p>
+                      <Label className="text-muted-foreground">Mode d'édition facture</Label>
+                      <p className="font-medium">{formatInvoiceMode(selectedClient.mode_edition_facture)}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Statut</Label>
                       <Badge
-                        variant={selectedClient.status === "Actif" ? "default" : "secondary"}
+                        variant={selectedClient.is_active ? "default" : "secondary"}
                         className={
-                          selectedClient.status === "Actif"
+                          selectedClient.is_active
                             ? "bg-green-100 text-green-800"
                             : "bg-red-100 text-red-800"
                         }
                       >
-                        {selectedClient.status}
+                        {selectedClient.is_active ? "Actif" : "Inactif"}
                       </Badge>
                     </div>
                   </div>
@@ -1032,7 +1038,9 @@ export default function Clients() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Modifier le client - {selectedClient?.code}</DialogTitle>
+            <DialogTitle>
+              Modifier le client - {selectedClient?.code}
+            </DialogTitle>
           </DialogHeader>
           {selectedClient && (
             <>
@@ -1045,7 +1053,10 @@ export default function Clients() {
                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                   Annuler
                 </Button>
-                <Button onClick={handleEditClient}>Enregistrer</Button>
+                <Button onClick={handleEditClient} disabled={saving}>
+                  {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Enregistrer
+                </Button>
               </div>
             </>
           )}
