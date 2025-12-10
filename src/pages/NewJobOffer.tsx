@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,28 +8,89 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables, Database } from "@/integrations/supabase/types";
 
-// Liste des clients (à remplacer par des données de la base de données)
-const clients = [
-  { id: "CLI001", name: "TechCorp Solutions", type: "C1" },
-  { id: "CLI002", name: "Innovation Labs", type: "C2" },
-  { id: "CLI003", name: "Digital Services SARL", type: "C1" },
-  { id: "CLI004", name: "Consulting Pro SA", type: "C9" },
-  { id: "CLI005", name: "MarocTech Industries", type: "C2" },
-];
+type Client = Tables<"clients">;
+type JobType = Database["public"]["Enums"]["job_type"];
+type JobStatus = Database["public"]["Enums"]["job_status"];
 
 export default function NewJobOffer() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedClient, setSelectedClient] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [clients, setClients] = useState<Client[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [formData, setFormData] = useState({
+    title: "",
+    client_id: "",
+    department: "",
+    job_type: "" as JobType | "",
+    location: "",
+    salary_min: "",
+    salary_max: "",
+    description: "",
+    requirements: "",
+    responsibilities: "",
+    benefits: "",
+    status: "draft" as JobStatus,
+  });
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    const { data, error } = await supabase
+      .from("clients")
+      .select("*")
+      .eq("is_active", true)
+      .order("raison_sociale");
+
+    if (!error && data) {
+      setClients(data);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Offre créée",
-      description: "L'offre d'emploi a été créée avec succès.",
-    });
-    navigate("/admin/recruitment");
+    setLoading(true);
+
+    try {
+      const insertData = {
+        title: formData.title,
+        client_id: formData.client_id || null,
+        department: formData.department || null,
+        job_type: (formData.job_type || "cdi") as JobType,
+        location: formData.location || null,
+        salary_min: formData.salary_min ? parseInt(formData.salary_min) : null,
+        salary_max: formData.salary_max ? parseInt(formData.salary_max) : null,
+        description: formData.description || null,
+        requirements: formData.requirements ? formData.requirements.split("\n").filter(Boolean) : null,
+        responsibilities: formData.responsibilities ? formData.responsibilities.split("\n").filter(Boolean) : null,
+        benefits: formData.benefits ? formData.benefits.split("\n").filter(Boolean) : null,
+        status: formData.status,
+        published_at: formData.status === "active" ? new Date().toISOString() : null,
+      };
+
+      const { error } = await supabase.from("job_offers").insert(insertData);
+
+      if (error) throw error;
+
+      toast({
+        title: "Offre créée",
+        description: "L'offre d'emploi a été créée avec succès.",
+      });
+      navigate("/admin/recruitment");
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de créer l'offre.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,18 +122,21 @@ export default function NewJobOffer() {
               <div className="space-y-2">
                 <Label htmlFor="client" className="flex items-center gap-2">
                   <Building2 className="w-4 h-4" />
-                  Client *
+                  Client
                 </Label>
-                <Select value={selectedClient} onValueChange={setSelectedClient} required>
+                <Select
+                  value={formData.client_id}
+                  onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+                >
                   <SelectTrigger id="client">
-                    <SelectValue placeholder="Sélectionner un client" />
+                    <SelectValue placeholder="Sélectionner un client (optionnel)" />
                   </SelectTrigger>
                   <SelectContent>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         <span className="flex items-center gap-2">
-                          <span className="font-medium">{client.name}</span>
-                          <span className="text-muted-foreground text-xs">({client.id} - {client.type})</span>
+                          <span className="font-medium">{client.raison_sociale}</span>
+                          <span className="text-muted-foreground text-xs">({client.code})</span>
                         </span>
                       </SelectItem>
                     ))}
@@ -89,58 +153,85 @@ export default function NewJobOffer() {
                   id="title"
                   placeholder="Ex: Développeur React Senior"
                   required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="department">Département *</Label>
-                  <Select required>
+                  <Label htmlFor="department">Département</Label>
+                  <Select
+                    value={formData.department}
+                    onValueChange={(value) => setFormData({ ...formData, department: value })}
+                  >
                     <SelectTrigger id="department">
                       <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="it">IT</SelectItem>
-                      <SelectItem value="management">Management</SelectItem>
-                      <SelectItem value="commercial">Commercial</SelectItem>
-                      <SelectItem value="rh">Ressources Humaines</SelectItem>
-                      <SelectItem value="finance">Finance</SelectItem>
+                      <SelectItem value="IT">IT</SelectItem>
+                      <SelectItem value="Management">Management</SelectItem>
+                      <SelectItem value="Commercial">Commercial</SelectItem>
+                      <SelectItem value="RH">Ressources Humaines</SelectItem>
+                      <SelectItem value="Finance">Finance</SelectItem>
+                      <SelectItem value="Marketing">Marketing</SelectItem>
+                      <SelectItem value="Production">Production</SelectItem>
+                      <SelectItem value="Logistique">Logistique</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="type">Type de contrat *</Label>
-                  <Select required>
+                  <Select
+                    value={formData.job_type}
+                    onValueChange={(value) => setFormData({ ...formData, job_type: value as JobType })}
+                    required
+                  >
                     <SelectTrigger id="type">
                       <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="cdi">CDI</SelectItem>
                       <SelectItem value="cdd">CDD</SelectItem>
-                      <SelectItem value="mission">Mission</SelectItem>
+                      <SelectItem value="interim">Intérim</SelectItem>
+                      <SelectItem value="freelance">Freelance</SelectItem>
                       <SelectItem value="stage">Stage</SelectItem>
-                      <SelectItem value="alternance">Alternance</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="location">Localisation *</Label>
+                  <Label htmlFor="location">Localisation</Label>
                   <Input
                     id="location"
                     placeholder="Ex: Paris, Lyon..."
-                    required
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="salary">Salaire</Label>
+                  <Label htmlFor="salary_min">Salaire min (€)</Label>
                   <Input
-                    id="salary"
-                    placeholder="Ex: 45-55K€"
+                    id="salary_min"
+                    type="number"
+                    placeholder="Ex: 35000"
+                    value={formData.salary_min}
+                    onChange={(e) => setFormData({ ...formData, salary_min: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="salary_max">Salaire max (€)</Label>
+                  <Input
+                    id="salary_max"
+                    type="number"
+                    placeholder="Ex: 45000"
+                    value={formData.salary_max}
+                    onChange={(e) => setFormData({ ...formData, salary_max: e.target.value })}
                   />
                 </div>
               </div>
@@ -153,31 +244,46 @@ export default function NewJobOffer() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
                   placeholder="Décrivez le poste, les responsabilités, l'environnement de travail..."
                   rows={6}
-                  required
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="requirements">Compétences requises *</Label>
+                <Label htmlFor="responsibilities">Responsabilités (une par ligne)</Label>
+                <Textarea
+                  id="responsibilities"
+                  placeholder="Développer et maintenir des applications&#10;Collaborer avec l'équipe produit&#10;Participer aux revues de code"
+                  rows={4}
+                  value={formData.responsibilities}
+                  onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="requirements">Compétences requises (une par ligne)</Label>
                 <Textarea
                   id="requirements"
-                  placeholder="Listez les compétences et qualifications nécessaires..."
+                  placeholder="5+ ans d'expérience&#10;Maîtrise de TypeScript&#10;Connaissance des tests unitaires"
                   rows={4}
-                  required
+                  value={formData.requirements}
+                  onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="benefits">Avantages</Label>
+                <Label htmlFor="benefits">Avantages (un par ligne)</Label>
                 <Textarea
                   id="benefits"
-                  placeholder="Télétravail, tickets restaurant, mutuelle..."
+                  placeholder="Télétravail flexible&#10;Tickets restaurant&#10;Mutuelle d'entreprise"
                   rows={3}
+                  value={formData.benefits}
+                  onChange={(e) => setFormData({ ...formData, benefits: e.target.value })}
                 />
               </div>
             </CardContent>
@@ -190,7 +296,10 @@ export default function NewJobOffer() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="status">Statut *</Label>
-                <Select defaultValue="draft">
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({ ...formData, status: value as JobStatus })}
+                >
                   <SelectTrigger id="status">
                     <SelectValue />
                   </SelectTrigger>
@@ -211,9 +320,9 @@ export default function NewJobOffer() {
             >
               Annuler
             </Button>
-            <Button type="submit" className="flex items-center space-x-2">
+            <Button type="submit" className="flex items-center space-x-2" disabled={loading}>
               <Save className="w-4 h-4" />
-              <span>Créer l'offre</span>
+              <span>{loading ? "Création..." : "Créer l'offre"}</span>
             </Button>
           </div>
         </div>

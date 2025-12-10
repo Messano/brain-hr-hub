@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Button } from "@/components/ui/button";
@@ -8,59 +9,130 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Briefcase, Building, Clock, Euro, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft, MapPin, Briefcase, Building, Clock, Euro, Send, Loader2 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
+import type { Tables } from "@/integrations/supabase/types";
+
+type JobOffer = Tables<"job_offers"> & {
+  clients?: { raison_sociale: string } | null;
+};
 
 export default function JobOfferDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [job, setJob] = useState<JobOffer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    cover_letter: "",
+  });
 
-  // Mock data - en production, ceci viendrait d'une API
-  const job = {
-    id: Number(id),
-    title: "Développeur React Senior",
-    department: "IT",
-    location: "Paris",
-    type: "CDI",
-    salary: "50-60K€",
-    published: "Il y a 2 jours",
-    company: "Tech Solutions",
-    description: `Nous recherchons un développeur React Senior passionné pour rejoindre notre équipe technique en pleine croissance.
+  useEffect(() => {
+    if (id) {
+      fetchJobOffer();
+    }
+  }, [id]);
 
-Vous travaillerez sur des projets innovants et challengeants, en utilisant les dernières technologies du web.`,
-    
-    responsibilities: [
-      "Développer et maintenir des applications React performantes",
-      "Collaborer avec l'équipe produit et design",
-      "Participer aux revues de code et mentorat des juniors",
-      "Contribuer à l'amélioration continue de nos pratiques",
-    ],
-    
-    requirements: [
-      "5+ ans d'expérience en développement React",
-      "Maîtrise de TypeScript et des hooks React",
-      "Expérience avec Redux ou Context API",
-      "Connaissance des tests unitaires (Jest, React Testing Library)",
-      "Bonnes pratiques de développement (Git, CI/CD)",
-    ],
-    
-    benefits: [
-      "Télétravail flexible (2-3 jours/semaine)",
-      "Tickets restaurant",
-      "Mutuelle d'entreprise",
-      "Formation continue",
-      "Équipement haut de gamme",
-      "RTT",
-    ],
+  const fetchJobOffer = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("job_offers")
+        .select("*, clients(raison_sociale)")
+        .eq("id", id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        toast({
+          title: "Offre introuvable",
+          description: "Cette offre n'existe pas ou n'est plus disponible.",
+          variant: "destructive",
+        });
+        navigate("/offres");
+        return;
+      }
+      setJob(data);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger l'offre.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const getJobTypeLabel = (type: string | null) => {
+    const types: Record<string, string> = {
+      cdi: "CDI",
+      cdd: "CDD",
+      interim: "Intérim",
+      freelance: "Freelance",
+      stage: "Stage",
+    };
+    return types[type || ""] || type;
+  };
+
+  const getSalaryText = (min: number | null, max: number | null) => {
+    if (min && max) return `${min.toLocaleString()}€ - ${max.toLocaleString()}€`;
+    if (min) return `À partir de ${min.toLocaleString()}€`;
+    if (max) return `Jusqu'à ${max.toLocaleString()}€`;
+    return "Non communiqué";
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Candidature envoyée",
-      description: "Nous vous recontacterons dans les plus brefs délais.",
-    });
+    if (!job) return;
+
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from("candidates").insert({
+        job_offer_id: job.id,
+        full_name: formData.full_name,
+        email: formData.email,
+        phone: formData.phone || null,
+        cover_letter: formData.cover_letter || null,
+        status: "new",
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Candidature envoyée",
+        description: "Nous vous recontacterons dans les plus brefs délais.",
+      });
+      setFormData({ full_name: "", email: "", phone: "", cover_letter: "" });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'envoyer la candidature.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PublicHeader />
+        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!job) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -86,77 +158,98 @@ Vous travaillerez sur des projets innovants et challengeants, en utilisant les d
                     <div className="space-y-2">
                       <CardTitle className="text-3xl">{job.title}</CardTitle>
                       <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Building className="w-4 h-4" />
-                          {job.company}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {job.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Briefcase className="w-4 h-4" />
-                          {job.department}
-                        </span>
+                        {job.clients?.raison_sociale && (
+                          <span className="flex items-center gap-1">
+                            <Building className="w-4 h-4" />
+                            {job.clients.raison_sociale}
+                          </span>
+                        )}
+                        {job.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4" />
+                            {job.location}
+                          </span>
+                        )}
+                        {job.department && (
+                          <span className="flex items-center gap-1">
+                            <Briefcase className="w-4 h-4" />
+                            {job.department}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <Badge className="bg-primary text-primary-foreground">{job.type}</Badge>
+                    <Badge className="bg-primary text-primary-foreground">
+                      {getJobTypeLabel(job.job_type)}
+                    </Badge>
                   </div>
 
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 text-primary font-semibold">
                       <Euro className="w-5 h-5" />
-                      {job.salary}
+                      {getSalaryText(job.salary_min, job.salary_max)}
                     </div>
                     <Separator orientation="vertical" className="h-6" />
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="w-4 h-4" />
-                      {job.published}
+                      {job.published_at
+                        ? formatDistanceToNow(new Date(job.published_at), { addSuffix: true, locale: fr })
+                        : "Récemment publié"}
                     </div>
                   </div>
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold mb-3">Description du poste</h3>
-                  <p className="text-muted-foreground whitespace-pre-line">{job.description}</p>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h3 className="text-xl font-semibold mb-3">Responsabilités</h3>
-                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                    {job.responsibilities.map((resp, index) => (
-                      <li key={index}>{resp}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h3 className="text-xl font-semibold mb-3">Compétences requises</h3>
-                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                    {job.requirements.map((req, index) => (
-                      <li key={index}>{req}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h3 className="text-xl font-semibold mb-3">Avantages</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {job.benefits.map((benefit, index) => (
-                      <Badge key={index} variant="secondary">
-                        {benefit}
-                      </Badge>
-                    ))}
+                {job.description && (
+                  <div>
+                    <h3 className="text-xl font-semibold mb-3">Description du poste</h3>
+                    <p className="text-muted-foreground whitespace-pre-line">{job.description}</p>
                   </div>
-                </div>
+                )}
+
+                {job.responsibilities && job.responsibilities.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-xl font-semibold mb-3">Responsabilités</h3>
+                      <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                        {job.responsibilities.map((resp, index) => (
+                          <li key={index}>{resp}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
+
+                {job.requirements && job.requirements.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-xl font-semibold mb-3">Compétences requises</h3>
+                      <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                        {job.requirements.map((req, index) => (
+                          <li key={index}>{req}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
+
+                {job.benefits && job.benefits.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-xl font-semibold mb-3">Avantages</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {job.benefits.map((benefit, index) => (
+                          <Badge key={index} variant="secondary">
+                            {benefit}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -171,37 +264,56 @@ Vous travaillerez sur des projets innovants et challengeants, en utilisant les d
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nom complet *</Label>
-                    <Input id="name" required placeholder="Jean Dupont" />
+                    <Input
+                      id="name"
+                      required
+                      placeholder="Jean Dupont"
+                      value={formData.full_name}
+                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="email">Email *</Label>
-                    <Input id="email" type="email" required placeholder="jean@example.com" />
+                    <Input
+                      id="email"
+                      type="email"
+                      required
+                      placeholder="jean@example.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Téléphone *</Label>
-                    <Input id="phone" type="tel" required placeholder="+33 6 12 34 56 78" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cv">CV *</Label>
-                    <Input id="cv" type="file" required accept=".pdf,.doc,.docx" />
-                    <p className="text-xs text-muted-foreground">PDF, DOC, DOCX (max 5MB)</p>
+                    <Label htmlFor="phone">Téléphone</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+33 6 12 34 56 78"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="cover">Lettre de motivation</Label>
-                    <Textarea 
-                      id="cover" 
+                    <Textarea
+                      id="cover"
                       placeholder="Parlez-nous de vous et de vos motivations..."
                       rows={4}
+                      value={formData.cover_letter}
+                      onChange={(e) => setFormData({ ...formData, cover_letter: e.target.value })}
                     />
                   </div>
 
-                  <Button type="submit" className="w-full">
-                    <Send className="w-4 h-4 mr-2" />
-                    Envoyer ma candidature
+                  <Button type="submit" className="w-full" disabled={submitting}>
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4 mr-2" />
+                    )}
+                    {submitting ? "Envoi..." : "Envoyer ma candidature"}
                   </Button>
 
                   <p className="text-xs text-muted-foreground text-center">
