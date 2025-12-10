@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Plus, Search, Filter, Calendar, MapPin, Clock, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +14,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { MissionForm } from "@/components/MissionForm";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Database } from "@/integrations/supabase/types";
+import { useToast } from "@/hooks/use-toast";
 
 type MissionStatus = Database["public"]["Enums"]["mission_status"];
 
@@ -37,9 +46,13 @@ interface MissionWithRelations {
 }
 
 export default function Missions() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // Fetch missions with client and candidate data
   const { data: missions, isLoading } = useQuery({
@@ -101,6 +114,38 @@ export default function Missions() {
     },
   });
 
+  // Create mission mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const { error } = await supabase.from("missions").insert({
+        title: data.title,
+        description: data.description || null,
+        client_id: data.client_id || null,
+        candidate_id: data.candidate_id || null,
+        location: data.location || null,
+        mission_type: data.mission_type || null,
+        daily_rate: data.daily_rate || null,
+        start_date: format(data.start_date, "yyyy-MM-dd"),
+        end_date: data.end_date ? format(data.end_date, "yyyy-MM-dd") : null,
+        status: data.status,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["missions"] });
+      queryClient.invalidateQueries({ queryKey: ["missions-kpi"] });
+      setIsCreateDialogOpen(false);
+      toast({ title: "Mission créée avec succès" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const getStatusBadge = (status: MissionStatus | null) => {
     switch (status) {
       case "active":
@@ -140,7 +185,7 @@ export default function Missions() {
           <h1 className="text-3xl font-bold">Missions & Contrats</h1>
           <p className="text-muted-foreground">Gérez les missions d'intérim et les contrats</p>
         </div>
-        <Button className="flex items-center space-x-2">
+        <Button className="flex items-center space-x-2" onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="w-4 h-4" />
           <span>Nouvelle mission</span>
         </Button>
@@ -266,10 +311,19 @@ export default function Missions() {
                     )}
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/admin/missions/${mission.id}`)}
+                    >
                       Voir détails
                     </Button>
-                    <Button size="sm">Modifier</Button>
+                    <Button
+                      size="sm"
+                      onClick={() => navigate(`/admin/missions/${mission.id}`)}
+                    >
+                      Modifier
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -286,13 +340,29 @@ export default function Missions() {
                 ? "Aucune mission ne correspond à vos critères de recherche."
                 : "Commencez par créer votre première mission."}
             </p>
-            <Button>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Nouvelle mission
             </Button>
           </CardContent>
         </Card>
       )}
+
+      {/* Create Mission Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nouvelle mission</DialogTitle>
+          </DialogHeader>
+          <MissionForm
+            onSubmit={async (data) => {
+              await createMutation.mutateAsync(data);
+            }}
+            onCancel={() => setIsCreateDialogOpen(false)}
+            isSubmitting={createMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
