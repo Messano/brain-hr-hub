@@ -17,6 +17,8 @@ import NewJobOffer from "./pages/NewJobOffer";
 import Candidates from "./pages/Candidates";
 import Missions from "./pages/Missions";
 import MissionDetail from "./pages/MissionDetail";
+import Contracts from "./pages/Contracts";
+import ContractDetail from "./pages/ContractDetail";
 import Payroll from "./pages/Payroll";
 import Training from "./pages/Training";
 import Planning from "./pages/Planning";
@@ -56,6 +58,8 @@ const App = () => (
                 <Route path="missions/:id" element={<MissionDetail />} />
                 <Route path="personnel" element={<Personnel />} />
                 <Route path="personnel/:id" element={<PersonnelDetail />} />
+                <Route path="contracts" element={<Contracts />} />
+                <Route path="contracts/:id" element={<ContractDetail />} />
                 <Route path="payroll" element={<Payroll />} />
                 <Route path="training" element={<Training />} />
                 <Route path="planning" element={<Planning />} />

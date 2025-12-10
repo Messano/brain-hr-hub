@@ -30,6 +30,7 @@ const navigation = [
   { title: "Tableau de bord", url: "/admin", icon: BarChart3 },
   { title: "Clients", url: "/admin/clients", icon: Building2 },
   { title: "Personnel", url: "/admin/personnel", icon: HardHat },
+  { title: "CTT", url: "/admin/contracts", icon: FileText },
   { title: "Recrutement", url: "/admin/recruitment", icon: Users },
   { title: "Candidatures", url: "/admin/candidates", icon: UserCheck },
   { title: "Missions & Contrats", url: "/admin/missions", icon: Briefcase },

@@ -187,6 +187,99 @@ export type Database = {
         }
         Relationships: []
       }
+      contracts: {
+        Row: {
+          caracteristiques_poste: string | null
+          client_id: string | null
+          coefficient_facturation: number | null
+          created_at: string | null
+          date_debut: string
+          date_entree_fonction: string | null
+          date_fin: string | null
+          id: string
+          indemnites_non_soumises_montant: number | null
+          indemnites_non_soumises_rubrique: string | null
+          is_active: boolean | null
+          justificatif: string | null
+          lieu_travail: string | null
+          motif_recours: string | null
+          numero_commande: string | null
+          numero_contrat: string
+          periode_essai: Database["public"]["Enums"]["trial_period"] | null
+          personnel_id: string | null
+          salaire_reference: number | null
+          status: Database["public"]["Enums"]["contract_status"] | null
+          taux_horaire: number | null
+          type_contrat: Database["public"]["Enums"]["contract_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          caracteristiques_poste?: string | null
+          client_id?: string | null
+          coefficient_facturation?: number | null
+          created_at?: string | null
+          date_debut: string
+          date_entree_fonction?: string | null
+          date_fin?: string | null
+          id?: string
+          indemnites_non_soumises_montant?: number | null
+          indemnites_non_soumises_rubrique?: string | null
+          is_active?: boolean | null
+          justificatif?: string | null
+          lieu_travail?: string | null
+          motif_recours?: string | null
+          numero_commande?: string | null
+          numero_contrat: string
+          periode_essai?: Database["public"]["Enums"]["trial_period"] | null
+          personnel_id?: string | null
+          salaire_reference?: number | null
+          status?: Database["public"]["Enums"]["contract_status"] | null
+          taux_horaire?: number | null
+          type_contrat?: Database["public"]["Enums"]["contract_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          caracteristiques_poste?: string | null
+          client_id?: string | null
+          coefficient_facturation?: number | null
+          created_at?: string | null
+          date_debut?: string
+          date_entree_fonction?: string | null
+          date_fin?: string | null
+          id?: string
+          indemnites_non_soumises_montant?: number | null
+          indemnites_non_soumises_rubrique?: string | null
+          is_active?: boolean | null
+          justificatif?: string | null
+          lieu_travail?: string | null
+          motif_recours?: string | null
+          numero_commande?: string | null
+          numero_contrat?: string
+          periode_essai?: Database["public"]["Enums"]["trial_period"] | null
+          personnel_id?: string | null
+          salaire_reference?: number | null
+          status?: Database["public"]["Enums"]["contract_status"] | null
+          taux_horaire?: number | null
+          type_contrat?: Database["public"]["Enums"]["contract_type"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           attendees: string[] | null
@@ -741,6 +834,13 @@ export type Database = {
         | "rejected"
       civilite: "Mr" | "Mle" | "Mme"
       client_type: "C1" | "C2" | "C9"
+      contract_status: "brouillon" | "actif" | "termine" | "annule"
+      contract_type:
+        | "nouveau"
+        | "modification"
+        | "renouvellement"
+        | "avenant"
+        | "duplicata"
       event_type: "meeting" | "interview" | "training" | "deadline" | "other"
       invoice_mode: "global" | "salarie" | "commande"
       job_status: "active" | "closed" | "draft"
@@ -751,6 +851,7 @@ export type Database = {
       payroll_status: "paid" | "pending" | "processing"
       situation_familiale: "C" | "M" | "D"
       training_status: "planned" | "in_progress" | "completed" | "cancelled"
+      trial_period: "2_jours" | "3_jours" | "5_jours"
       tva_type: "normale" | "exoneree" | "reduite"
     }
     CompositeTypes: {
@@ -890,6 +991,14 @@ export const Constants = {
       ],
       civilite: ["Mr", "Mle", "Mme"],
       client_type: ["C1", "C2", "C9"],
+      contract_status: ["brouillon", "actif", "termine", "annule"],
+      contract_type: [
+        "nouveau",
+        "modification",
+        "renouvellement",
+        "avenant",
+        "duplicata",
+      ],
       event_type: ["meeting", "interview", "training", "deadline", "other"],
       invoice_mode: ["global", "salarie", "commande"],
       job_status: ["active", "closed", "draft"],
@@ -900,6 +1009,7 @@ export const Constants = {
       payroll_status: ["paid", "pending", "processing"],
       situation_familiale: ["C", "M", "D"],
       training_status: ["planned", "in_progress", "completed", "cancelled"],
+      trial_period: ["2_jours", "3_jours", "5_jours"],
       tva_type: ["normale", "exoneree", "reduite"],
     },
   },
