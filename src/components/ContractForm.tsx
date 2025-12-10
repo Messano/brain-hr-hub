@@ -46,6 +46,7 @@ const contractSchema = z.object({
   indemnites_non_soumises_montant: z.number().optional(),
   client_id: z.string().optional(),
   personnel_id: z.string().optional(),
+  mission_id: z.string().optional(),
   status: z.enum(["brouillon", "actif", "termine", "annule"]).optional(),
 });
 
@@ -79,8 +80,21 @@ export default function ContractForm({ initialData, onSubmit, onCancel, isLoadin
       indemnites_non_soumises_montant: 0,
       client_id: "",
       personnel_id: "",
+      mission_id: "",
       status: "brouillon",
       ...initialData,
+    },
+  });
+
+  const { data: missions } = useQuery({
+    queryKey: ["missions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("missions")
+        .select("id, title, status")
+        .order("start_date", { ascending: false });
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -491,6 +505,31 @@ export default function ContractForm({ initialData, onSubmit, onCancel, isLoadin
                         {personnel?.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
                             {p.matricule} - {p.nom} {p.prenom}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="mission_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mission associée</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner une mission" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {missions?.map((mission) => (
+                          <SelectItem key={mission.id} value={mission.id}>
+                            {mission.title} ({mission.status})
                           </SelectItem>
                         ))}
                       </SelectContent>
