@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Button } from "@/components/ui/button";
@@ -6,79 +6,78 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MapPin, Clock, Briefcase, Building } from "lucide-react";
+import { Search, MapPin, Clock, Briefcase, Building, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
+import type { Tables } from "@/integrations/supabase/types";
+
+type JobOffer = Tables<"job_offers"> & {
+  clients?: { raison_sociale: string } | null;
+};
 
 export default function PublicJobOffers() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
+  const [jobOffers, setJobOffers] = useState<JobOffer[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const jobOffers = [
-    {
-      id: 1,
-      title: "Développeur React Senior",
-      department: "IT",
-      location: "Paris",
-      type: "CDI",
-      salary: "50-60K€",
-      published: "Il y a 2 jours",
-      description: "Nous recherchons un développeur React expérimenté pour rejoindre notre équipe technique.",
-      company: "Tech Solutions"
-    },
-    {
-      id: 2,
-      title: "Chef de Projet Digital",
-      department: "Management",
-      location: "Lyon",
-      type: "CDI",
-      salary: "45-55K€",
-      published: "Il y a 3 jours",
-      description: "Pilotez des projets digitaux d'envergure dans un environnement dynamique.",
-      company: "Digital Corp"
-    },
-    {
-      id: 3,
-      title: "Consultant IT",
-      department: "IT",
-      location: "Marseille",
-      type: "Mission",
-      salary: "400-500€/jour",
-      published: "Il y a 5 jours",
-      description: "Mission de conseil en transformation digitale auprès de grands comptes.",
-      company: "Consulting Group"
-    },
-    {
-      id: 4,
-      title: "Responsable RH",
-      department: "Ressources Humaines",
-      location: "Paris",
-      type: "CDI",
-      salary: "40-50K€",
-      published: "Il y a 1 semaine",
-      description: "Gérez l'ensemble des processus RH d'une entreprise en forte croissance.",
-      company: "Innovation Ltd"
-    },
-    {
-      id: 5,
-      title: "Développeur Full Stack",
-      department: "IT",
-      location: "Toulouse",
-      type: "CDI",
-      salary: "45-55K€",
-      published: "Il y a 1 semaine",
-      description: "Développez des applications web innovantes avec les dernières technologies.",
-      company: "StartUp Tech"
-    },
-    {
-      id: 6,
-      title: "Commercial B2B",
-      department: "Commercial",
-      location: "Lyon",
-      type: "CDI",
-      salary: "35-45K€ + variables",
-      published: "Il y a 2 semaines",
-      description: "Développez notre portefeuille clients dans le secteur du B2B.",
-      company: "Sales Pro"
-    },
-  ];
+  useEffect(() => {
+    fetchJobOffers();
+  }, []);
+
+  const fetchJobOffers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("job_offers")
+        .select("*, clients(raison_sociale)")
+        .eq("status", "active")
+        .order("published_at", { ascending: false });
+
+      if (error) throw error;
+      setJobOffers(data || []);
+    } catch (error) {
+      console.error("Error fetching job offers:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getJobTypeLabel = (type: string | null) => {
+    const types: Record<string, string> = {
+      cdi: "CDI",
+      cdd: "CDD",
+      interim: "Intérim",
+      freelance: "Freelance",
+      stage: "Stage",
+    };
+    return types[type || ""] || type;
+  };
+
+  const getSalaryText = (min: number | null, max: number | null) => {
+    if (min && max) return `${min.toLocaleString()}€ - ${max.toLocaleString()}€`;
+    if (min) return `À partir de ${min.toLocaleString()}€`;
+    if (max) return `Jusqu'à ${max.toLocaleString()}€`;
+    return null;
+  };
+
+  // Get unique departments and locations for filters
+  const departments = [...new Set(jobOffers.map((j) => j.department).filter(Boolean))] as string[];
+  const locations = [...new Set(jobOffers.map((j) => j.location).filter(Boolean))] as string[];
+
+  // Filter job offers
+  const filteredOffers = jobOffers.filter((job) => {
+    const matchesSearch =
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesDepartment = departmentFilter === "all" || job.department === departmentFilter;
+    const matchesLocation = locationFilter === "all" || job.location === locationFilter;
+
+    return matchesSearch && matchesDepartment && matchesLocation;
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -111,29 +110,31 @@ export default function PublicJobOffers() {
                     </div>
                   </div>
 
-                  <Select>
+                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                     <SelectTrigger>
                       <SelectValue placeholder="Département" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tous</SelectItem>
-                      <SelectItem value="it">IT</SelectItem>
-                      <SelectItem value="management">Management</SelectItem>
-                      <SelectItem value="commercial">Commercial</SelectItem>
-                      <SelectItem value="rh">RH</SelectItem>
+                      <SelectItem value="all">Tous les départements</SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept} value={dept}>
+                          {dept}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
 
-                  <Select>
+                  <Select value={locationFilter} onValueChange={setLocationFilter}>
                     <SelectTrigger>
                       <SelectValue placeholder="Ville" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Toutes</SelectItem>
-                      <SelectItem value="paris">Paris</SelectItem>
-                      <SelectItem value="lyon">Lyon</SelectItem>
-                      <SelectItem value="marseille">Marseille</SelectItem>
-                      <SelectItem value="toulouse">Toulouse</SelectItem>
+                      <SelectItem value="all">Toutes les villes</SelectItem>
+                      {locations.map((loc) => (
+                        <SelectItem key={loc} value={loc}>
+                          {loc}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -148,70 +149,90 @@ export default function PublicJobOffers() {
         <div className="container mx-auto px-4">
           <div className="mb-6 flex items-center justify-between">
             <p className="text-muted-foreground">
-              <span className="font-semibold text-foreground">{jobOffers.length}</span> offres disponibles
+              <span className="font-semibold text-foreground">{filteredOffers.length}</span> offres disponibles
             </p>
-            <Select defaultValue="recent">
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">Plus récent</SelectItem>
-                <SelectItem value="salary">Salaire</SelectItem>
-                <SelectItem value="location">Localisation</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
-          <div className="grid gap-6">
-            {jobOffers.map((job) => (
-              <Card 
-                key={job.id} 
-                className="hover:shadow-lg transition-all duration-300 hover-scale cursor-pointer"
-              >
-                <CardHeader>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-2">
-                      <CardTitle className="text-2xl hover:text-primary transition-colors">
-                        <Link to={`/offres/${job.id}`}>{job.title}</Link>
-                      </CardTitle>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Building className="w-4 h-4" />
-                          {job.company}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Briefcase className="w-4 h-4" />
-                          {job.department}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {job.location}
-                        </span>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : filteredOffers.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">
+                  {searchTerm || departmentFilter !== "all" || locationFilter !== "all"
+                    ? "Aucune offre ne correspond à votre recherche."
+                    : "Aucune offre d'emploi disponible pour le moment."}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6">
+              {filteredOffers.map((job) => (
+                <Card
+                  key={job.id}
+                  className="hover:shadow-lg transition-all duration-300 hover-scale cursor-pointer"
+                >
+                  <CardHeader>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-2">
+                        <CardTitle className="text-2xl hover:text-primary transition-colors">
+                          <Link to={`/offres/${job.id}`}>{job.title}</Link>
+                        </CardTitle>
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                          {job.clients?.raison_sociale && (
+                            <span className="flex items-center gap-1">
+                              <Building className="w-4 h-4" />
+                              {job.clients.raison_sociale}
+                            </span>
+                          )}
+                          {job.department && (
+                            <span className="flex items-center gap-1">
+                              <Briefcase className="w-4 h-4" />
+                              {job.department}
+                            </span>
+                          )}
+                          {job.location && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {job.location}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-start md:items-end gap-2">
+                        <Badge className="bg-primary text-primary-foreground">
+                          {getJobTypeLabel(job.job_type)}
+                        </Badge>
+                        {getSalaryText(job.salary_min, job.salary_max) && (
+                          <span className="text-sm font-semibold text-primary">
+                            {getSalaryText(job.salary_min, job.salary_max)}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex flex-col items-start md:items-end gap-2">
-                      <Badge className="bg-primary text-primary-foreground">{job.type}</Badge>
-                      <span className="text-sm font-semibold text-primary">{job.salary}</span>
+                  </CardHeader>
+                  <CardContent>
+                    {job.description && (
+                      <p className="text-muted-foreground mb-4 line-clamp-2">{job.description}</p>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {job.published_at
+                          ? formatDistanceToNow(new Date(job.published_at), { addSuffix: true, locale: fr })
+                          : "Récemment publié"}
+                      </span>
+                      <Button asChild>
+                        <Link to={`/offres/${job.id}`}>Voir l'offre</Link>
+                      </Button>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">{job.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {job.published}
-                    </span>
-                    <Button asChild>
-                      <Link to={`/offres/${job.id}`}>
-                        Voir l'offre
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
