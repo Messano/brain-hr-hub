@@ -22,9 +22,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Edit, Trash2, FileText, Building2, User, Calendar, Banknote } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, FileText, Building2, User, Banknote } from "lucide-react";
 import { toast } from "sonner";
 import ContractForm from "@/components/ContractForm";
+import ContractHistory from "@/components/ContractHistory";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -62,11 +63,58 @@ export default function ContractDetail() {
         client_id: data.client_id || null,
         personnel_id: data.personnel_id || null,
       };
-      const { error } = await supabase.from("contracts").update(updateData).eq("id", id);
-      if (error) throw error;
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Utilisateur non connecté");
+
+      // Get current version number
+      const { data: lastHistory } = await supabase
+        .from("contract_history")
+        .select("version_number")
+        .eq("contract_id", id)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const newVersion = (lastHistory?.version_number || 0) + 1;
+
+      // Calculate changes
+      const changes: Record<string, { old: any; new: any }> = {};
+      const oldData = contract;
+      
+      Object.keys(updateData).forEach((key) => {
+        if (oldData && oldData[key as keyof typeof oldData] !== updateData[key]) {
+          changes[key] = {
+            old: oldData[key as keyof typeof oldData],
+            new: updateData[key],
+          };
+        }
+      });
+
+      // Update contract
+      const { error: updateError } = await supabase
+        .from("contracts")
+        .update(updateData)
+        .eq("id", id);
+      if (updateError) throw updateError;
+
+      // Record history
+      const { error: historyError } = await supabase
+        .from("contract_history")
+        .insert({
+          contract_id: id,
+          version_number: newVersion,
+          changed_by: user.id,
+          change_type: Object.keys(changes).includes("status") ? "status_change" : "modification",
+          changes,
+          snapshot: updateData,
+        });
+      if (historyError) throw historyError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contract", id] });
+      queryClient.invalidateQueries({ queryKey: ["contract-history", id] });
       setIsEditDialogOpen(false);
       toast.success("Contrat mis à jour avec succès");
     },
@@ -357,6 +405,8 @@ export default function ContractDetail() {
           </Card>
         )}
       </div>
+
+      <ContractHistory contractId={id!} />
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
