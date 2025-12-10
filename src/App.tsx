@@ -12,6 +12,7 @@ import JobOfferDetail from "./pages/JobOfferDetail";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Recruitment from "./pages/Recruitment";
+import EditJobOffer from "./pages/EditJobOffer";
 import NewJobOffer from "./pages/NewJobOffer";
 import Candidates from "./pages/Candidates";
 import Missions from "./pages/Missions";
@@ -46,6 +47,7 @@ const App = () => (
                 <Route index element={<Dashboard />} />
                 <Route path="recruitment" element={<Recruitment />} />
                 <Route path="recruitment/new" element={<NewJobOffer />} />
+                <Route path="recruitment/:id/edit" element={<EditJobOffer />} />
                 <Route path="candidates" element={<Candidates />} />
                 <Route path="missions" element={<Missions />} />
                 <Route path="payroll" element={<Payroll />} />
