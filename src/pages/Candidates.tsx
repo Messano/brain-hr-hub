@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, Filter, Eye, Phone, Mail, MapPin, X, Star, FileText, Calendar, Briefcase } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Filter, Eye, Phone, Mail, MapPin, X, Star, FileText, Calendar, Briefcase, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { format, formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,132 +21,137 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface Candidate {
-  name: string;
-  position: string;
-  status: string;
+  id: string;
+  full_name: string;
   email: string;
-  phone: string;
-  location: string;
-  experience: string;
-  applied: string;
-  cv?: string;
-  motivation?: string;
-  skills?: string[];
-  education?: string;
-  salary?: string;
+  phone: string | null;
+  cv_url: string | null;
+  cover_letter: string | null;
+  status: string | null;
+  rating: number | null;
+  notes: string | null;
+  applied_at: string | null;
+  job_offer_id: string | null;
+  job_offer?: {
+    id: string;
+    title: string;
+    location: string | null;
+  } | null;
+}
+
+interface JobOffer {
+  id: string;
+  title: string;
 }
 
 export default function Candidates() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [positionFilter, setPositionFilter] = useState<string | null>(null);
+  const [jobOfferFilter, setJobOfferFilter] = useState<string | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEvalOpen, setIsEvalOpen] = useState(false);
   const [evalNote, setEvalNote] = useState("");
   const [evalRating, setEvalRating] = useState<number>(0);
   const [evalDecision, setEvalDecision] = useState<string>("");
+  
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [jobOffers, setJobOffers] = useState<JobOffer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const candidates: Candidate[] = [
-    {
-      name: "Marie Dupont",
-      position: "Développeur React Senior",
-      status: "interview",
-      email: "marie.dupont@email.com",
-      phone: "06 12 34 56 78",
-      location: "Paris",
-      experience: "5 ans",
-      applied: "Il y a 2 jours",
-      skills: ["React", "TypeScript", "Node.js", "PostgreSQL"],
-      education: "Master Informatique - Université Paris-Saclay",
-      salary: "55 000 € - 65 000 €",
-      motivation: "Passionnée par le développement web moderne, je souhaite rejoindre une équipe dynamique pour contribuer à des projets innovants."
-    },
-    {
-      name: "Jean Martin",
-      position: "Chef de Projet",
-      status: "evaluation",
-      email: "jean.martin@email.com", 
-      phone: "06 87 65 43 21",
-      location: "Lyon",
-      experience: "8 ans",
-      applied: "Il y a 1 semaine",
-      skills: ["Gestion de projet", "Agile", "Scrum", "Leadership"],
-      education: "MBA Management - EM Lyon",
-      salary: "60 000 € - 75 000 €",
-      motivation: "Fort de 8 années d'expérience en gestion de projets IT, je cherche à relever de nouveaux défis dans une entreprise en croissance."
-    },
-    {
-      name: "Sophie Bernard",
-      position: "Consultant IT",
-      status: "new",
-      email: "sophie.bernard@email.com",
-      phone: "06 55 44 33 22",
-      location: "Marseille",
-      experience: "3 ans",
-      applied: "Il y a 3 heures",
-      skills: ["SAP", "ERP", "Analyse fonctionnelle", "SQL"],
-      education: "Ingénieur INSA Lyon",
-      salary: "45 000 € - 55 000 €",
-      motivation: "Je souhaite mettre mes compétences en conseil IT au service d'une entreprise ambitieuse."
-    },
-    {
-      name: "Pierre Durand",
-      position: "Développeur React Senior", 
-      status: "rejected",
-      email: "pierre.durand@email.com",
-      phone: "06 99 88 77 66",
-      location: "Toulouse",
-      experience: "4 ans",
-      applied: "Il y a 2 semaines",
-      skills: ["React", "JavaScript", "CSS", "Git"],
-      education: "DUT Informatique - IUT Toulouse",
-      salary: "45 000 € - 50 000 €",
-      motivation: "Développeur passionné, je recherche une opportunité pour évoluer vers des responsabilités techniques."
+  useEffect(() => {
+    fetchCandidates();
+    fetchJobOffers();
+  }, []);
+
+  const fetchCandidates = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('candidates')
+        .select(`
+          *,
+          job_offer:job_offers(id, title, location)
+        `)
+        .order('applied_at', { ascending: false });
+
+      if (error) throw error;
+      setCandidates(data || []);
+    } catch (error: any) {
+      toast.error("Erreur lors du chargement des candidats");
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const positions = [...new Set(candidates.map(c => c.position))];
+  const fetchJobOffers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('job_offers')
+        .select('id, title')
+        .order('title');
+
+      if (error) throw error;
+      setJobOffers(data || []);
+    } catch (error: any) {
+      console.error(error);
+    }
+  };
 
   const filteredCandidates = candidates.filter(candidate => {
-    const matchesSearch = candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          candidate.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          candidate.position.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = 
+      candidate.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      candidate.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (candidate.job_offer?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
     const matchesStatus = !statusFilter || candidate.status === statusFilter;
-    const matchesPosition = !positionFilter || candidate.position === positionFilter;
-    return matchesSearch && matchesStatus && matchesPosition;
+    const matchesJobOffer = !jobOfferFilter || candidate.job_offer_id === jobOfferFilter;
+    return matchesSearch && matchesStatus && matchesJobOffer;
   });
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
     switch (status) {
       case 'new':
         return <Badge className="bg-primary text-primary-foreground">Nouvelle</Badge>;
-      case 'evaluation':
-        return <Badge className="bg-warning text-warning-foreground">Évaluation</Badge>;
+      case 'screening':
+        return <Badge className="bg-warning text-warning-foreground">Présélection</Badge>;
       case 'interview':
         return <Badge className="bg-success text-success-foreground">Entretien</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">Rejetée</Badge>;
+      case 'offer':
+        return <Badge className="bg-info text-info-foreground">Offre</Badge>;
       case 'hired':
-        return <Badge className="bg-success text-success-foreground">Embauchée</Badge>;
+        return <Badge className="bg-success text-success-foreground">Embauché</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejeté</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{status || 'Inconnu'}</Badge>;
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'new': return 'Nouvelle';
-      case 'evaluation': return 'Évaluation';
+      case 'screening': return 'Présélection';
       case 'interview': return 'Entretien';
-      case 'rejected': return 'Rejetée';
-      case 'hired': return 'Embauchée';
+      case 'offer': return 'Offre';
+      case 'hired': return 'Embauché';
+      case 'rejected': return 'Rejeté';
       default: return status;
     }
   };
 
   const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const formatAppliedDate = (date: string | null) => {
+    if (!date) return 'Date inconnue';
+    try {
+      return formatDistanceToNow(new Date(date), { addSuffix: true, locale: fr });
+    } catch {
+      return 'Date inconnue';
+    }
   };
 
   const handleView = (candidate: Candidate) => {
@@ -153,26 +161,57 @@ export default function Candidates() {
 
   const handleEvaluate = (candidate: Candidate) => {
     setSelectedCandidate(candidate);
-    setEvalNote("");
-    setEvalRating(0);
-    setEvalDecision("");
+    setEvalNote(candidate.notes || "");
+    setEvalRating(candidate.rating || 0);
+    setEvalDecision(candidate.status || "");
     setIsEvalOpen(true);
   };
 
-  const submitEvaluation = () => {
+  const submitEvaluation = async () => {
     if (!evalDecision) {
       toast.error("Veuillez sélectionner une décision");
       return;
     }
-    toast.success(`Évaluation de ${selectedCandidate?.name} enregistrée avec succès`);
-    setIsEvalOpen(false);
+
+    if (!selectedCandidate) return;
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('candidates')
+        .update({
+          status: evalDecision as any,
+          rating: evalRating > 0 ? evalRating : null,
+          notes: evalNote || null
+        })
+        .eq('id', selectedCandidate.id);
+
+      if (error) throw error;
+
+      toast.success(`Évaluation de ${selectedCandidate.full_name} enregistrée`);
+      setIsEvalOpen(false);
+      fetchCandidates();
+    } catch (error: any) {
+      toast.error("Erreur lors de l'enregistrement");
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const clearFilters = () => {
     setSearchQuery("");
     setStatusFilter(null);
-    setPositionFilter(null);
+    setJobOfferFilter(null);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -205,31 +244,32 @@ export default function Candidates() {
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => setStatusFilter(null)}>Tous</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setStatusFilter("new")}>Nouvelle</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStatusFilter("evaluation")}>Évaluation</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter("screening")}>Présélection</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setStatusFilter("interview")}>Entretien</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStatusFilter("rejected")}>Rejetée</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStatusFilter("hired")}>Embauchée</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter("offer")}>Offre</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter("hired")}>Embauché</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setStatusFilter("rejected")}>Rejeté</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant={positionFilter ? "default" : "outline"}>
-                  <Filter className="w-4 h-4 mr-2" />
-                  {positionFilter || "Poste"}
+                <Button variant={jobOfferFilter ? "default" : "outline"}>
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  {jobOfferFilter ? jobOffers.find(j => j.id === jobOfferFilter)?.title?.slice(0, 20) + '...' : "Offre d'emploi"}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setPositionFilter(null)}>Tous</DropdownMenuItem>
-                {positions.map(position => (
-                  <DropdownMenuItem key={position} onClick={() => setPositionFilter(position)}>
-                    {position}
+              <DropdownMenuContent className="max-h-64 overflow-y-auto">
+                <DropdownMenuItem onClick={() => setJobOfferFilter(null)}>Toutes les offres</DropdownMenuItem>
+                {jobOffers.map(offer => (
+                  <DropdownMenuItem key={offer.id} onClick={() => setJobOfferFilter(offer.id)}>
+                    {offer.title}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {(searchQuery || statusFilter || positionFilter) && (
+            {(searchQuery || statusFilter || jobOfferFilter) && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <X className="w-4 h-4 mr-1" />
                 Effacer
@@ -246,26 +286,33 @@ export default function Candidates() {
 
       {/* Candidates List */}
       <div className="grid gap-4">
-        {filteredCandidates.map((candidate, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
+        {filteredCandidates.map((candidate) => (
+          <Card key={candidate.id} className="hover:shadow-md transition-shadow">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-12 w-12">
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {getInitials(candidate.name)}
+                      {getInitials(candidate.full_name)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="font-semibold text-lg">{candidate.name}</h3>
-                    <p className="text-muted-foreground">{candidate.position}</p>
+                    <h3 className="font-semibold text-lg">{candidate.full_name}</h3>
+                    <p className="text-muted-foreground">{candidate.job_offer?.title || 'Candidature spontanée'}</p>
                     <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-1 flex-wrap gap-y-1">
-                      <span className="flex items-center">
-                        <MapPin className="w-3 h-3 mr-1" />
-                        {candidate.location}
-                      </span>
-                      <span>{candidate.experience} d'expérience</span>
-                      <span>{candidate.applied}</span>
+                      {candidate.job_offer?.location && (
+                        <span className="flex items-center">
+                          <MapPin className="w-3 h-3 mr-1" />
+                          {candidate.job_offer.location}
+                        </span>
+                      )}
+                      <span>{formatAppliedDate(candidate.applied_at)}</span>
+                      {candidate.rating && (
+                        <span className="flex items-center">
+                          <Star className="w-3 h-3 mr-1 fill-warning text-warning" />
+                          {candidate.rating}/5
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -277,9 +324,16 @@ export default function Candidates() {
                       <a href={`mailto:${candidate.email}`} title={candidate.email}>
                         <Mail className="w-4 h-4 hover:text-primary cursor-pointer" />
                       </a>
-                      <a href={`tel:${candidate.phone}`} title={candidate.phone}>
-                        <Phone className="w-4 h-4 hover:text-primary cursor-pointer" />
-                      </a>
+                      {candidate.phone && (
+                        <a href={`tel:${candidate.phone}`} title={candidate.phone}>
+                          <Phone className="w-4 h-4 hover:text-primary cursor-pointer" />
+                        </a>
+                      )}
+                      {candidate.cv_url && (
+                        <a href={candidate.cv_url} target="_blank" rel="noopener noreferrer" title="Voir CV">
+                          <FileText className="w-4 h-4 hover:text-primary cursor-pointer" />
+                        </a>
+                      )}
                     </div>
                   </div>
                   
@@ -302,7 +356,9 @@ export default function Candidates() {
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground">Aucun candidat trouvé</p>
-              <Button variant="link" onClick={clearFilters}>Effacer les filtres</Button>
+              {(searchQuery || statusFilter || jobOfferFilter) && (
+                <Button variant="link" onClick={clearFilters}>Effacer les filtres</Button>
+              )}
             </CardContent>
           </Card>
         )}
@@ -315,12 +371,14 @@ export default function Candidates() {
             <DialogTitle className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
                 <AvatarFallback className="bg-primary text-primary-foreground">
-                  {selectedCandidate && getInitials(selectedCandidate.name)}
+                  {selectedCandidate && getInitials(selectedCandidate.full_name)}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <span>{selectedCandidate?.name}</span>
-                <p className="text-sm font-normal text-muted-foreground">{selectedCandidate?.position}</p>
+                <span>{selectedCandidate?.full_name}</span>
+                <p className="text-sm font-normal text-muted-foreground">
+                  {selectedCandidate?.job_offer?.title || 'Candidature spontanée'}
+                </p>
               </div>
             </DialogTitle>
             <DialogDescription>
@@ -332,55 +390,81 @@ export default function Candidates() {
             <div className="space-y-6 mt-4">
               <div className="flex items-center gap-2">
                 {getStatusBadge(selectedCandidate.status)}
-                <span className="text-sm text-muted-foreground">• {selectedCandidate.applied}</span>
+                <span className="text-sm text-muted-foreground">
+                  • {formatAppliedDate(selectedCandidate.applied_at)}
+                </span>
+                {selectedCandidate.rating && (
+                  <div className="flex items-center gap-1 ml-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${
+                          star <= selectedCandidate.rating!
+                            ? "fill-warning text-warning"
+                            : "text-muted-foreground"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm">
                     <Mail className="w-4 h-4 text-muted-foreground" />
-                    <a href={`mailto:${selectedCandidate.email}`} className="hover:underline">{selectedCandidate.email}</a>
+                    <a href={`mailto:${selectedCandidate.email}`} className="hover:underline">
+                      {selectedCandidate.email}
+                    </a>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    <a href={`tel:${selectedCandidate.phone}`} className="hover:underline">{selectedCandidate.phone}</a>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                    <span>{selectedCandidate.location}</span>
-                  </div>
+                  {selectedCandidate.phone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <a href={`tel:${selectedCandidate.phone}`} className="hover:underline">
+                        {selectedCandidate.phone}
+                      </a>
+                    </div>
+                  )}
+                  {selectedCandidate.job_offer?.location && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="w-4 h-4 text-muted-foreground" />
+                      <span>{selectedCandidate.job_offer.location}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Briefcase className="w-4 h-4 text-muted-foreground" />
-                    <span>{selectedCandidate.experience} d'expérience</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span>{selectedCandidate.education}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>Prétentions: {selectedCandidate.salary}</span>
-                  </div>
+                  {selectedCandidate.cv_url && (
+                    <a
+                      href={selectedCandidate.cv_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Voir le CV
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <h4 className="font-medium mb-2">Compétences</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedCandidate.skills?.map((skill, i) => (
-                    <Badge key={i} variant="secondary">{skill}</Badge>
-                  ))}
+              {selectedCandidate.cover_letter && (
+                <div>
+                  <h4 className="font-medium mb-2">Lettre de motivation</h4>
+                  <p className="text-sm text-muted-foreground bg-muted p-4 rounded-lg whitespace-pre-wrap">
+                    {selectedCandidate.cover_letter}
+                  </p>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <h4 className="font-medium mb-2">Lettre de motivation</h4>
-                <p className="text-sm text-muted-foreground bg-muted p-4 rounded-lg">
-                  {selectedCandidate.motivation}
-                </p>
-              </div>
+              {selectedCandidate.notes && (
+                <div>
+                  <h4 className="font-medium mb-2">Notes d'évaluation</h4>
+                  <p className="text-sm text-muted-foreground bg-muted p-4 rounded-lg whitespace-pre-wrap">
+                    {selectedCandidate.notes}
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-2 pt-4 border-t">
                 <Button className="flex-1" onClick={() => { setIsViewOpen(false); handleEvaluate(selectedCandidate); }}>
@@ -399,9 +483,9 @@ export default function Candidates() {
       <Dialog open={isEvalOpen} onOpenChange={setIsEvalOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Évaluer {selectedCandidate?.name}</DialogTitle>
+            <DialogTitle>Évaluer {selectedCandidate?.full_name}</DialogTitle>
             <DialogDescription>
-              {selectedCandidate?.position}
+              {selectedCandidate?.job_offer?.title || 'Candidature spontanée'}
             </DialogDescription>
           </DialogHeader>
           
@@ -429,35 +513,36 @@ export default function Candidates() {
             </div>
 
             <div>
-              <Label htmlFor="decision">Décision</Label>
+              <Label className="mb-2 block">Décision</Label>
               <Select value={evalDecision} onValueChange={setEvalDecision}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger>
                   <SelectValue placeholder="Sélectionner une décision" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="interview">Convoquer en entretien</SelectItem>
-                  <SelectItem value="shortlist">Mettre en shortlist</SelectItem>
-                  <SelectItem value="hold">Mettre en attente</SelectItem>
-                  <SelectItem value="reject">Rejeter la candidature</SelectItem>
-                  <SelectItem value="hire">Proposer une embauche</SelectItem>
+                  <SelectItem value="new">Nouvelle</SelectItem>
+                  <SelectItem value="screening">Présélection</SelectItem>
+                  <SelectItem value="interview">Entretien</SelectItem>
+                  <SelectItem value="offer">Offre</SelectItem>
+                  <SelectItem value="hired">Embauché</SelectItem>
+                  <SelectItem value="rejected">Rejeté</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="notes">Notes et commentaires</Label>
+              <Label className="mb-2 block">Notes</Label>
               <Textarea
-                id="notes"
-                placeholder="Ajoutez vos observations sur ce candidat..."
+                placeholder="Ajouter des notes sur ce candidat..."
                 value={evalNote}
                 onChange={(e) => setEvalNote(e.target.value)}
-                className="mt-1 min-h-[100px]"
+                rows={4}
               />
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button className="flex-1" onClick={submitEvaluation}>
-                Enregistrer l'évaluation
+              <Button className="flex-1" onClick={submitEvaluation} disabled={saving}>
+                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Enregistrer
               </Button>
               <Button variant="outline" onClick={() => setIsEvalOpen(false)}>
                 Annuler
