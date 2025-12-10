@@ -444,6 +444,105 @@ export type Database = {
           },
         ]
       }
+      personnel: {
+        Row: {
+          adresse: string | null
+          civilite: Database["public"]["Enums"]["civilite"]
+          code_postal: string | null
+          complement_adresse: string | null
+          created_at: string | null
+          date_entree: string | null
+          date_fin_mission: string | null
+          date_naissance: string | null
+          date_premiere_paie: string | null
+          date_validite_document: string | null
+          domiciliation_bancaire: string | null
+          id: string
+          is_active: boolean | null
+          matricule: string
+          mode_paiement: Database["public"]["Enums"]["mode_paiement"] | null
+          nationalite: string | null
+          nom: string
+          nom_jeune_fille: string | null
+          numero_document: string | null
+          prenom: string
+          qualification: string | null
+          rib: string | null
+          situation_familiale:
+            | Database["public"]["Enums"]["situation_familiale"]
+            | null
+          telephone1: string | null
+          telephone2: string | null
+          type_document: string | null
+          updated_at: string | null
+          ville: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          civilite?: Database["public"]["Enums"]["civilite"]
+          code_postal?: string | null
+          complement_adresse?: string | null
+          created_at?: string | null
+          date_entree?: string | null
+          date_fin_mission?: string | null
+          date_naissance?: string | null
+          date_premiere_paie?: string | null
+          date_validite_document?: string | null
+          domiciliation_bancaire?: string | null
+          id?: string
+          is_active?: boolean | null
+          matricule: string
+          mode_paiement?: Database["public"]["Enums"]["mode_paiement"] | null
+          nationalite?: string | null
+          nom: string
+          nom_jeune_fille?: string | null
+          numero_document?: string | null
+          prenom: string
+          qualification?: string | null
+          rib?: string | null
+          situation_familiale?:
+            | Database["public"]["Enums"]["situation_familiale"]
+            | null
+          telephone1?: string | null
+          telephone2?: string | null
+          type_document?: string | null
+          updated_at?: string | null
+          ville?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          civilite?: Database["public"]["Enums"]["civilite"]
+          code_postal?: string | null
+          complement_adresse?: string | null
+          created_at?: string | null
+          date_entree?: string | null
+          date_fin_mission?: string | null
+          date_naissance?: string | null
+          date_premiere_paie?: string | null
+          date_validite_document?: string | null
+          domiciliation_bancaire?: string | null
+          id?: string
+          is_active?: boolean | null
+          matricule?: string
+          mode_paiement?: Database["public"]["Enums"]["mode_paiement"] | null
+          nationalite?: string | null
+          nom?: string
+          nom_jeune_fille?: string | null
+          numero_document?: string | null
+          prenom?: string
+          qualification?: string | null
+          rib?: string | null
+          situation_familiale?:
+            | Database["public"]["Enums"]["situation_familiale"]
+            | null
+          telephone1?: string | null
+          telephone2?: string | null
+          type_document?: string | null
+          updated_at?: string | null
+          ville?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -640,14 +739,17 @@ export type Database = {
         | "offer"
         | "hired"
         | "rejected"
+      civilite: "Mr" | "Mle" | "Mme"
       client_type: "C1" | "C2" | "C9"
       event_type: "meeting" | "interview" | "training" | "deadline" | "other"
       invoice_mode: "global" | "salarie" | "commande"
       job_status: "active" | "closed" | "draft"
       job_type: "cdi" | "cdd" | "interim" | "freelance" | "stage"
       mission_status: "active" | "completed" | "pending" | "cancelled"
+      mode_paiement: "espece" | "cheque" | "virement"
       payment_mode: "cheque" | "traite" | "virement"
       payroll_status: "paid" | "pending" | "processing"
+      situation_familiale: "C" | "M" | "D"
       training_status: "planned" | "in_progress" | "completed" | "cancelled"
       tva_type: "normale" | "exoneree" | "reduite"
     }
@@ -786,14 +888,17 @@ export const Constants = {
         "hired",
         "rejected",
       ],
+      civilite: ["Mr", "Mle", "Mme"],
       client_type: ["C1", "C2", "C9"],
       event_type: ["meeting", "interview", "training", "deadline", "other"],
       invoice_mode: ["global", "salarie", "commande"],
       job_status: ["active", "closed", "draft"],
       job_type: ["cdi", "cdd", "interim", "freelance", "stage"],
       mission_status: ["active", "completed", "pending", "cancelled"],
+      mode_paiement: ["espece", "cheque", "virement"],
       payment_mode: ["cheque", "traite", "virement"],
       payroll_status: ["paid", "pending", "processing"],
+      situation_familiale: ["C", "M", "D"],
       training_status: ["planned", "in_progress", "completed", "cancelled"],
       tva_type: ["normale", "exoneree", "reduite"],
     },
