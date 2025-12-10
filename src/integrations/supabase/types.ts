@@ -243,6 +243,7 @@ export type Database = {
           is_active: boolean | null
           justificatif: string | null
           lieu_travail: string | null
+          mission_id: string | null
           motif_recours: string | null
           numero_commande: string | null
           numero_contrat: string
@@ -268,6 +269,7 @@ export type Database = {
           is_active?: boolean | null
           justificatif?: string | null
           lieu_travail?: string | null
+          mission_id?: string | null
           motif_recours?: string | null
           numero_commande?: string | null
           numero_contrat: string
@@ -293,6 +295,7 @@ export type Database = {
           is_active?: boolean | null
           justificatif?: string | null
           lieu_travail?: string | null
+          mission_id?: string | null
           motif_recours?: string | null
           numero_commande?: string | null
           numero_contrat?: string
@@ -310,6 +313,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
             referencedColumns: ["id"]
           },
           {
@@ -461,6 +471,7 @@ export type Database = {
           id: string
           location: string | null
           mission_type: string | null
+          personnel_id: string | null
           start_date: string
           status: Database["public"]["Enums"]["mission_status"] | null
           title: string
@@ -477,6 +488,7 @@ export type Database = {
           id?: string
           location?: string | null
           mission_type?: string | null
+          personnel_id?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["mission_status"] | null
           title: string
@@ -493,6 +505,7 @@ export type Database = {
           id?: string
           location?: string | null
           mission_type?: string | null
+          personnel_id?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["mission_status"] | null
           title?: string
@@ -511,6 +524,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "missions_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
             referencedColumns: ["id"]
           },
         ]

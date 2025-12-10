@@ -40,6 +40,7 @@ const missionSchema = z.object({
   description: z.string().max(2000, "Description trop longue").optional(),
   client_id: z.string().optional(),
   candidate_id: z.string().optional(),
+  personnel_id: z.string().optional(),
   location: z.string().max(200, "Localisation trop longue").optional(),
   mission_type: z.string().max(100, "Type trop long").optional(),
   daily_rate: z.coerce.number().min(0, "Le tarif doit être positif").optional(),
@@ -57,6 +58,7 @@ interface MissionFormProps {
     description: string | null;
     client_id: string | null;
     candidate_id: string | null;
+    personnel_id?: string | null;
     location: string | null;
     mission_type: string | null;
     daily_rate: number | null;
@@ -77,6 +79,7 @@ export function MissionForm({ mission, onSubmit, onCancel, isSubmitting }: Missi
       description: mission?.description || "",
       client_id: mission?.client_id || undefined,
       candidate_id: mission?.candidate_id || undefined,
+      personnel_id: mission?.personnel_id || undefined,
       location: mission?.location || "",
       mission_type: mission?.mission_type || "",
       daily_rate: mission?.daily_rate || undefined,
@@ -108,6 +111,20 @@ export function MissionForm({ mission, onSubmit, onCancel, isSubmitting }: Missi
         .from("candidates")
         .select("id, full_name, email")
         .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch personnel
+  const { data: personnel } = useQuery({
+    queryKey: ["personnel-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("personnel")
+        .select("id, nom, prenom, matricule")
+        .eq("is_active", true)
+        .order("nom");
       if (error) throw error;
       return data;
     },
@@ -165,7 +182,7 @@ export function MissionForm({ mission, onSubmit, onCancel, isSubmitting }: Missi
             name="candidate_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Candidat / Intérimaire</FormLabel>
+                <FormLabel>Candidat</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
@@ -176,6 +193,31 @@ export function MissionForm({ mission, onSubmit, onCancel, isSubmitting }: Missi
                     {candidates?.map((candidate) => (
                       <SelectItem key={candidate.id} value={candidate.id}>
                         {candidate.full_name} ({candidate.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="personnel_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Personnel / Intérimaire</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un personnel" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {personnel?.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.matricule} - {p.nom} {p.prenom}
                       </SelectItem>
                     ))}
                   </SelectContent>
