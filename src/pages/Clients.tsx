@@ -15,10 +15,19 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -634,29 +643,34 @@ export default function Clients() {
             Gestion des clients et de leurs paramètres
           </p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
+        <Sheet open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <SheetTrigger asChild>
             <Button className="gap-2">
               <Plus className="w-4 h-4" />
               Nouveau client
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Ajouter un nouveau client</DialogTitle>
-            </DialogHeader>
-            <ClientForm client={newClient} setClient={setNewClient} />
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Annuler
-              </Button>
-              <Button onClick={handleAddClient} disabled={saving}>
-                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Ajouter
-              </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Ajouter un nouveau client</SheetTitle>
+              <SheetDescription>
+                Remplissez les informations du nouveau client
+              </SheetDescription>
+            </SheetHeader>
+            <div className="mt-6">
+              <ClientForm client={newClient} setClient={setNewClient} />
+              <div className="flex justify-end gap-2 mt-6">
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Annuler
+                </Button>
+                <Button onClick={handleAddClient} disabled={saving}>
+                  {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Ajouter
+                </Button>
+              </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Stats Cards */}
@@ -854,6 +868,9 @@ export default function Clients() {
             <DialogTitle>
               Détails du client - {selectedClient?.code}
             </DialogTitle>
+            <DialogDescription>
+              Informations complètes du client
+            </DialogDescription>
           </DialogHeader>
           {selectedClient && (
             <div className="space-y-6">
@@ -1034,22 +1051,25 @@ export default function Clients() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+      {/* Edit Sheet */}
+      <Sheet open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>
               Modifier le client - {selectedClient?.code}
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+            <SheetDescription>
+              Modifiez les informations du client
+            </SheetDescription>
+          </SheetHeader>
           {selectedClient && (
-            <>
+            <div className="mt-6">
               <ClientForm
                 client={selectedClient}
                 setClient={setSelectedClient}
                 isEdit
               />
-              <div className="flex justify-end gap-2 mt-4">
+              <div className="flex justify-end gap-2 mt-6">
                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                   Annuler
                 </Button>
@@ -1058,10 +1078,10 @@ export default function Clients() {
                   Enregistrer
                 </Button>
               </div>
-            </>
+            </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
