@@ -13,7 +13,9 @@ import {
   Building2,
   HardHat,
   Receipt,
+  LucideIcon,
 } from "lucide-react";
+import { useAuth, AppRole } from "@/hooks/useAuth";
 
 import {
   Sidebar,
@@ -27,30 +29,48 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const navigation = [
-  { title: "Tableau de bord", url: "/admin", icon: BarChart3 },
-  { title: "Clients", url: "/admin/clients", icon: Building2 },
-  { title: "Personnel", url: "/admin/personnel", icon: HardHat },
-  { title: "CTT", url: "/admin/contracts", icon: FileText },
-  { title: "Facturation", url: "/admin/invoices", icon: Receipt },
-  { title: "Recrutement", url: "/admin/recruitment", icon: Users },
-  { title: "Candidatures", url: "/admin/candidates", icon: UserCheck },
-  { title: "Missions & Contrats", url: "/admin/missions", icon: Briefcase },
-  { title: "Paie", url: "/admin/payroll", icon: CreditCard },
-  { title: "Formations", url: "/admin/training", icon: BookOpen },
-  { title: "Planning", url: "/admin/planning", icon: Calendar },
-  { title: "Utilisateurs", url: "/admin/users", icon: Users },
-  { title: "Rapports & Export", url: "/admin/reports", icon: FileText },
-  { title: "Paramètres", url: "/admin/settings", icon: Settings },
+interface NavItem {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  allowedRoles: AppRole[];
+}
+
+// Define navigation with role-based access
+// super_admin has access to everything (handled in filter logic)
+const navigation: NavItem[] = [
+  { title: "Tableau de bord", url: "/admin", icon: BarChart3, allowedRoles: ['super_admin', 'admin', 'manager', 'user'] },
+  { title: "Clients", url: "/admin/clients", icon: Building2, allowedRoles: ['super_admin', 'admin', 'manager'] },
+  { title: "Personnel", url: "/admin/personnel", icon: HardHat, allowedRoles: ['super_admin', 'admin', 'manager'] },
+  { title: "CTT", url: "/admin/contracts", icon: FileText, allowedRoles: ['super_admin', 'admin', 'manager'] },
+  { title: "Facturation", url: "/admin/invoices", icon: Receipt, allowedRoles: ['super_admin', 'admin'] },
+  { title: "Recrutement", url: "/admin/recruitment", icon: Users, allowedRoles: ['super_admin', 'admin', 'manager'] },
+  { title: "Candidatures", url: "/admin/candidates", icon: UserCheck, allowedRoles: ['super_admin', 'admin', 'manager'] },
+  { title: "Missions & Contrats", url: "/admin/missions", icon: Briefcase, allowedRoles: ['super_admin', 'admin', 'manager'] },
+  { title: "Paie", url: "/admin/payroll", icon: CreditCard, allowedRoles: ['super_admin', 'admin'] },
+  { title: "Formations", url: "/admin/training", icon: BookOpen, allowedRoles: ['super_admin', 'admin', 'manager'] },
+  { title: "Planning", url: "/admin/planning", icon: Calendar, allowedRoles: ['super_admin', 'admin', 'manager', 'user'] },
+  { title: "Utilisateurs", url: "/admin/users", icon: Users, allowedRoles: ['super_admin', 'admin'] },
+  { title: "Rapports & Export", url: "/admin/reports", icon: FileText, allowedRoles: ['super_admin', 'admin', 'manager'] },
+  { title: "Paramètres", url: "/admin/settings", icon: Settings, allowedRoles: ['super_admin', 'admin'] },
 ];
 
 export function AppSidebar() {
   const { open } = useSidebar();
   const location = useLocation();
+  const { role, isSuperAdmin } = useAuth();
 
   const isActive = (path: string) => {
     return location.pathname === path || (path !== "/admin" && location.pathname.startsWith(path));
   };
+
+  // Filter navigation items based on user role
+  const filteredNavigation = navigation.filter((item) => {
+    // Super admin always sees everything
+    if (isSuperAdmin) return true;
+    // Check if user's role is in the allowed roles
+    return role && item.allowedRoles.includes(role);
+  });
 
   return (
     <Sidebar className={open ? "w-64" : "w-16"} collapsible="icon">
@@ -74,7 +94,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigation.map((item) => (
+              {filteredNavigation.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild

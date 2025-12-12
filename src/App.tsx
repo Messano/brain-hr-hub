@@ -48,29 +48,38 @@ const App = () => (
             <Route path="/offres/:id" element={<JobOfferDetail />} />
             <Route path="/auth" element={<Auth />} />
             
-            {/* Protected Admin Routes */}
+            {/* Protected Admin Routes - All authenticated users */}
             <Route element={<ProtectedRoute />}>
               <Route path="/admin" element={<AppLayout />}>
+                {/* Dashboard & Planning - accessible to all roles */}
                 <Route index element={<Dashboard />} />
-                <Route path="recruitment" element={<Recruitment />} />
-                <Route path="recruitment/new" element={<NewJobOffer />} />
-                <Route path="recruitment/:id/edit" element={<EditJobOffer />} />
-                <Route path="candidates" element={<Candidates />} />
-                <Route path="missions" element={<Missions />} />
-                <Route path="missions/:id" element={<MissionDetail />} />
-                <Route path="personnel" element={<Personnel />} />
-                <Route path="personnel/:id" element={<PersonnelDetail />} />
-                <Route path="contracts" element={<Contracts />} />
-                <Route path="contracts/:id" element={<ContractDetail />} />
-                <Route path="invoices" element={<Invoices />} />
-                <Route path="invoices/:id" element={<InvoiceDetail />} />
-                <Route path="payroll" element={<Payroll />} />
-                <Route path="training" element={<Training />} />
                 <Route path="planning" element={<Planning />} />
-                <Route path="users" element={<Users />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="clients" element={<Clients />} />
+                
+                {/* Manager+ routes */}
+                <Route element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']} />}>
+                  <Route path="clients" element={<Clients />} />
+                  <Route path="personnel" element={<Personnel />} />
+                  <Route path="personnel/:id" element={<PersonnelDetail />} />
+                  <Route path="contracts" element={<Contracts />} />
+                  <Route path="contracts/:id" element={<ContractDetail />} />
+                  <Route path="recruitment" element={<Recruitment />} />
+                  <Route path="recruitment/new" element={<NewJobOffer />} />
+                  <Route path="recruitment/:id/edit" element={<EditJobOffer />} />
+                  <Route path="candidates" element={<Candidates />} />
+                  <Route path="missions" element={<Missions />} />
+                  <Route path="missions/:id" element={<MissionDetail />} />
+                  <Route path="training" element={<Training />} />
+                  <Route path="reports" element={<Reports />} />
+                </Route>
+                
+                {/* Admin+ routes */}
+                <Route element={<ProtectedRoute allowedRoles={['super_admin', 'admin']} />}>
+                  <Route path="invoices" element={<Invoices />} />
+                  <Route path="invoices/:id" element={<InvoiceDetail />} />
+                  <Route path="payroll" element={<Payroll />} />
+                  <Route path="users" element={<Users />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
               </Route>
             </Route>
             
