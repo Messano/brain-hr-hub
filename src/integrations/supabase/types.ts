@@ -777,6 +777,7 @@ export type Database = {
           completion_date: string | null
           created_at: string | null
           id: string
+          personnel_id: string | null
           training_id: string | null
         }
         Insert: {
@@ -785,6 +786,7 @@ export type Database = {
           completion_date?: string | null
           created_at?: string | null
           id?: string
+          personnel_id?: string | null
           training_id?: string | null
         }
         Update: {
@@ -793,6 +795,7 @@ export type Database = {
           completion_date?: string | null
           created_at?: string | null
           id?: string
+          personnel_id?: string | null
           training_id?: string | null
         }
         Relationships: [
@@ -801,6 +804,13 @@ export type Database = {
             columns: ["candidate_id"]
             isOneToOne: false
             referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_participants_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
             referencedColumns: ["id"]
           },
           {

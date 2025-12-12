@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { KPICard } from "@/components/KPICard";
 import {
   Dialog,
@@ -29,7 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { TrainingForm } from "@/components/TrainingForm";
+import { TrainingParticipants } from "@/components/TrainingParticipants";
 import { useTrainings, useCreateTraining, useUpdateTraining, useDeleteTraining, Training } from "@/hooks/useTrainings";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -306,12 +307,12 @@ export default function TrainingPage() {
 
       {/* View Dialog */}
       <Dialog open={!!viewingTraining} onOpenChange={(open) => !open && setViewingTraining(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{viewingTraining?.title}</DialogTitle>
           </DialogHeader>
           {viewingTraining && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex items-center gap-2">
                 {getStatusBadge(viewingTraining.status)}
                 {viewingTraining.category && <Badge variant="secondary">{viewingTraining.category}</Badge>}
@@ -353,6 +354,13 @@ export default function TrainingPage() {
                   </div>
                 )}
               </div>
+              
+              <Separator />
+              
+              <TrainingParticipants 
+                trainingId={viewingTraining.id} 
+                maxParticipants={viewingTraining.max_participants}
+              />
             </div>
           )}
         </DialogContent>
