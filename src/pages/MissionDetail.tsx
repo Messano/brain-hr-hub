@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -15,11 +15,14 @@ import {
   Loader2,
   Download,
   Euro,
+  FileSignature,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -59,8 +62,10 @@ interface MissionWithRelations {
   updated_at: string | null;
   client_id: string | null;
   candidate_id: string | null;
+  personnel_id: string | null;
   client: { id: string; raison_sociale: string; contact_nom: string | null; contact_email: string | null } | null;
   candidate: { id: string; full_name: string; email: string; phone: string | null } | null;
+  personnel: { id: string; matricule: string; nom: string; prenom: string; civilite: string } | null;
 }
 
 export default function MissionDetail() {
@@ -78,7 +83,8 @@ export default function MissionDetail() {
         .select(`
           *,
           client:clients(id, raison_sociale, contact_nom, contact_email),
-          candidate:candidates(id, full_name, email, phone)
+          candidate:candidates(id, full_name, email, phone),
+          personnel:personnel(id, matricule, nom, prenom, civilite)
         `)
         .eq("id", id!)
         .maybeSingle();
@@ -86,6 +92,20 @@ export default function MissionDetail() {
       if (error) throw error;
       if (!data) throw new Error("Mission non trouvée");
       return data as MissionWithRelations;
+    },
+    enabled: !!id,
+  });
+
+  const { data: contracts } = useQuery({
+    queryKey: ["mission-contracts", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contracts")
+        .select("*, clients(raison_sociale), personnel(nom, prenom)")
+        .eq("mission_id", id)
+        .order("date_debut", { ascending: false });
+      if (error) throw error;
+      return data;
     },
     enabled: !!id,
   });
@@ -366,7 +386,7 @@ export default function MissionDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="w-5 h-5" />
-                Intérimaire / Candidat
+                Candidat
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -390,8 +410,93 @@ export default function MissionDetail() {
               )}
             </CardContent>
           </Card>
+
+          {/* Personnel Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Personnel / Intérimaire
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {mission.personnel ? (
+                <div className="space-y-2">
+                  <p className="font-medium">
+                    {mission.personnel.civilite} {mission.personnel.prenom} {mission.personnel.nom}
+                  </p>
+                  <p className="text-sm text-muted-foreground font-mono">
+                    {mission.personnel.matricule}
+                  </p>
+                  <Link to={`/admin/personnel/${mission.personnel.id}`}>
+                    <Button variant="outline" size="sm" className="mt-2">
+                      Voir le profil
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">Aucun personnel assigné</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
+
+      {/* Contrats associés */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileSignature className="w-5 h-5" />
+            Contrats CTT associés ({contracts?.length || 0})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {contracts && contracts.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>N° Contrat</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Personnel</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Date début</TableHead>
+                  <TableHead>Date fin</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {contracts.map((contract: any) => (
+                  <TableRow key={contract.id}>
+                    <TableCell className="font-mono font-medium">{contract.numero_contrat}</TableCell>
+                    <TableCell>{contract.type_contrat}</TableCell>
+                    <TableCell>
+                      {contract.personnel 
+                        ? `${contract.personnel.prenom} ${contract.personnel.nom}` 
+                        : "-"}
+                    </TableCell>
+                    <TableCell>{contract.clients?.raison_sociale || "-"}</TableCell>
+                    <TableCell>{formatDate(contract.date_debut)}</TableCell>
+                    <TableCell>{formatDate(contract.date_fin)}</TableCell>
+                    <TableCell>
+                      <Badge variant={contract.status === "actif" ? "default" : "secondary"}>
+                        {contract.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Link to={`/admin/contracts/${contract.id}`}>
+                        <Button variant="ghost" size="sm">Voir</Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-muted-foreground text-center py-4">Aucun contrat associé à cette mission</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
