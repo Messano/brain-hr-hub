@@ -12,6 +12,7 @@ import {
   Brain,
   Building2,
   HardHat,
+  Receipt,
 } from "lucide-react";
 
 import {
@@ -31,6 +32,7 @@ const navigation = [
   { title: "Clients", url: "/admin/clients", icon: Building2 },
   { title: "Personnel", url: "/admin/personnel", icon: HardHat },
   { title: "CTT", url: "/admin/contracts", icon: FileText },
+  { title: "Facturation", url: "/admin/invoices", icon: Receipt },
   { title: "Recrutement", url: "/admin/recruitment", icon: Users },
   { title: "Candidatures", url: "/admin/candidates", icon: UserCheck },
   { title: "Missions & Contrats", url: "/admin/missions", icon: Briefcase },
