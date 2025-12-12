@@ -72,7 +72,13 @@ export function useInvoice(id: string | undefined) {
       if (!id) return null;
       const { data, error } = await supabase
         .from("invoices")
-        .select("*, clients(id, raison_sociale, code, tva, code_ice, adresse_facturation, delai_reglement, mode_reglement)")
+        .select(`*, clients(
+          id, raison_sociale, code, tva, code_ice, adresse_facturation, 
+          delai_reglement, mode_reglement,
+          coef_heures_normales, coef_heures_sup_25, coef_heures_sup_50, 
+          coef_heures_sup_100, coef_heures_feriees, coef_indemnites_soumises,
+          coef_indemnites_non_soumises, coef_conge_paye, coef_prime
+        )`)
         .eq("id", id)
         .maybeSingle();
 
@@ -87,6 +93,15 @@ export function useInvoice(id: string | undefined) {
           adresse_facturation: string | null;
           delai_reglement: number | null;
           mode_reglement: string | null;
+          coef_heures_normales: number | null;
+          coef_heures_sup_25: number | null;
+          coef_heures_sup_50: number | null;
+          coef_heures_sup_100: number | null;
+          coef_heures_feriees: number | null;
+          coef_indemnites_soumises: number | null;
+          coef_indemnites_non_soumises: number | null;
+          coef_conge_paye: number | null;
+          coef_prime: number | null;
         } | null;
       };
     },

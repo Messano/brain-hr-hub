@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +48,7 @@ import {
   Euro,
   FileText,
   Edit,
+  Calculator,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -77,6 +78,7 @@ export default function InvoiceDetail() {
   const [addLineOpen, setAddLineOpen] = useState(false);
   const [newLine, setNewLine] = useState({
     personnel_id: "",
+    contract_id: "",
     heures_normales: 0,
     heures_sup_25: 0,
     heures_sup_50: 0,
@@ -89,6 +91,10 @@ export default function InvoiceDetail() {
     montant_ht: 0,
     description: "",
   });
+  const [selectedContract, setSelectedContract] = useState<{
+    id: string;
+    taux_horaire: number | null;
+  } | null>(null);
 
   const { data: invoice, isLoading: invoiceLoading } = useInvoice(id);
   const { data: lines, isLoading: linesLoading } = useInvoiceLines(id);
@@ -110,6 +116,80 @@ export default function InvoiceDetail() {
     },
   });
 
+  // Fetch contract for selected personnel
+  const { data: personnelContract } = useQuery({
+    queryKey: ["personnel-contract", newLine.personnel_id, invoice?.client_id],
+    queryFn: async () => {
+      if (!newLine.personnel_id || !invoice?.client_id) return null;
+      const { data, error } = await supabase
+        .from("contracts")
+        .select("id, taux_horaire, numero_contrat")
+        .eq("personnel_id", newLine.personnel_id)
+        .eq("client_id", invoice.client_id)
+        .eq("is_active", true)
+        .order("date_debut", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!newLine.personnel_id && !!invoice?.client_id,
+  });
+
+  // Update selected contract when personnel contract changes
+  useEffect(() => {
+    if (personnelContract) {
+      setSelectedContract({
+        id: personnelContract.id,
+        taux_horaire: personnelContract.taux_horaire,
+      });
+      setNewLine(prev => ({ ...prev, contract_id: personnelContract.id }));
+    } else {
+      setSelectedContract(null);
+      setNewLine(prev => ({ ...prev, contract_id: "" }));
+    }
+  }, [personnelContract]);
+
+  // Calculate montant_ht automatically based on hours and coefficients
+  const calculatedMontantHT = useMemo(() => {
+    const tauxHoraire = selectedContract?.taux_horaire || 0;
+    const client = invoice?.clients;
+    
+    if (!tauxHoraire || !client) return 0;
+
+    const coefNormales = Number(client.coef_heures_normales) || 1;
+    const coefSup25 = Number(client.coef_heures_sup_25) || 1.25;
+    const coefSup50 = Number(client.coef_heures_sup_50) || 1.5;
+    const coefSup100 = Number(client.coef_heures_sup_100) || 2;
+    const coefFeriees = Number(client.coef_heures_feriees) || 2;
+    const coefIndSoumises = Number(client.coef_indemnites_soumises) || 1;
+    const coefIndNonSoumises = Number(client.coef_indemnites_non_soumises) || 1;
+    const coefCP = Number(client.coef_conge_paye) || 1;
+    const coefPrime = Number(client.coef_prime) || 1;
+
+    const montantHeures = 
+      (newLine.heures_normales * tauxHoraire * coefNormales) +
+      (newLine.heures_sup_25 * tauxHoraire * coefSup25) +
+      (newLine.heures_sup_50 * tauxHoraire * coefSup50) +
+      (newLine.heures_sup_100 * tauxHoraire * coefSup100) +
+      (newLine.heures_feriees * tauxHoraire * coefFeriees);
+
+    const montantIndemnites = 
+      (newLine.indemnites_soumises * coefIndSoumises) +
+      (newLine.indemnites_non_soumises * coefIndNonSoumises) +
+      (newLine.conge_paye * coefCP) +
+      (newLine.prime * coefPrime);
+
+    return Math.round((montantHeures + montantIndemnites) * 100) / 100;
+  }, [newLine, selectedContract, invoice?.clients]);
+
+  // Update montant_ht when calculated value changes
+  useEffect(() => {
+    if (calculatedMontantHT > 0) {
+      setNewLine(prev => ({ ...prev, montant_ht: calculatedMontantHT }));
+    }
+  }, [calculatedMontantHT]);
+
   const handleStatusChange = async (newStatus: InvoiceStatus) => {
     if (id) {
       const updates: { id: string; status: InvoiceStatus; payment_date?: string } = {
@@ -128,12 +208,13 @@ export default function InvoiceDetail() {
     await createLine.mutateAsync({
       invoice_id: id,
       personnel_id: newLine.personnel_id || null,
-      contract_id: null,
+      contract_id: newLine.contract_id || null,
       ...newLine,
     });
     setAddLineOpen(false);
     setNewLine({
       personnel_id: "",
+      contract_id: "",
       heures_normales: 0,
       heures_sup_25: 0,
       heures_sup_50: 0,
@@ -146,6 +227,7 @@ export default function InvoiceDetail() {
       montant_ht: 0,
       description: "",
     });
+    setSelectedContract(null);
   };
 
   const handleDeleteLine = async (lineId: string) => {
@@ -361,6 +443,24 @@ export default function InvoiceDetail() {
                   </Select>
                 </div>
 
+                {selectedContract && (
+                  <div className="bg-muted/50 p-3 rounded-lg flex items-center gap-3">
+                    <Calculator className="h-5 w-5 text-primary" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Contrat trouvé : {personnelContract?.numero_contrat}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Taux horaire : {formatCurrency(selectedContract.taux_horaire || 0)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {newLine.personnel_id && !selectedContract && (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
+                    Aucun contrat actif trouvé pour cet intérimaire avec ce client. Le calcul automatique ne sera pas disponible.
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Heures normales</Label>
@@ -433,7 +533,12 @@ export default function InvoiceDetail() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Montant HT</Label>
+                    <Label className="flex items-center gap-2">
+                      Montant HT
+                      {selectedContract && calculatedMontantHT > 0 && (
+                        <span className="text-xs text-primary font-normal">(calculé auto.)</span>
+                      )}
+                    </Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -444,9 +549,21 @@ export default function InvoiceDetail() {
                           montant_ht: parseFloat(e.target.value) || 0,
                         }))
                       }
+                      className={selectedContract && calculatedMontantHT > 0 ? "bg-primary/5 border-primary/30" : ""}
                     />
                   </div>
                 </div>
+
+                {selectedContract && calculatedMontantHT > 0 && (
+                  <div className="bg-primary/10 p-3 rounded-lg">
+                    <p className="text-sm font-medium text-primary">
+                      Montant calculé : {formatCurrency(calculatedMontantHT)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Basé sur le taux horaire ({formatCurrency(selectedContract.taux_horaire || 0)}) et les coefficients du client
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
