@@ -391,6 +391,147 @@ export type Database = {
           },
         ]
       }
+      invoice_lines: {
+        Row: {
+          conge_paye: number | null
+          contract_id: string | null
+          created_at: string | null
+          description: string | null
+          heures_feriees: number | null
+          heures_normales: number | null
+          heures_sup_100: number | null
+          heures_sup_25: number | null
+          heures_sup_50: number | null
+          id: string
+          indemnites_non_soumises: number | null
+          indemnites_soumises: number | null
+          invoice_id: string
+          montant_ht: number
+          personnel_id: string | null
+          prime: number | null
+        }
+        Insert: {
+          conge_paye?: number | null
+          contract_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          heures_feriees?: number | null
+          heures_normales?: number | null
+          heures_sup_100?: number | null
+          heures_sup_25?: number | null
+          heures_sup_50?: number | null
+          id?: string
+          indemnites_non_soumises?: number | null
+          indemnites_soumises?: number | null
+          invoice_id: string
+          montant_ht?: number
+          personnel_id?: string | null
+          prime?: number | null
+        }
+        Update: {
+          conge_paye?: number | null
+          contract_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          heures_feriees?: number | null
+          heures_normales?: number | null
+          heures_sup_100?: number | null
+          heures_sup_25?: number | null
+          heures_sup_50?: number | null
+          id?: string
+          indemnites_non_soumises?: number | null
+          indemnites_soumises?: number | null
+          invoice_id?: string
+          montant_ht?: number
+          personnel_id?: string | null
+          prime?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_lines_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          due_date: string | null
+          id: string
+          invoice_number: string
+          issue_date: string
+          notes: string | null
+          payment_date: string | null
+          period_end: string
+          period_start: string
+          status: Database["public"]["Enums"]["invoice_status"] | null
+          total_ht: number
+          total_ttc: number
+          total_tva: number
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          notes?: string | null
+          payment_date?: string | null
+          period_end: string
+          period_start: string
+          status?: Database["public"]["Enums"]["invoice_status"] | null
+          total_ht?: number
+          total_ttc?: number
+          total_tva?: number
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          notes?: string | null
+          payment_date?: string | null
+          period_end?: string
+          period_start?: string
+          status?: Database["public"]["Enums"]["invoice_status"] | null
+          total_ht?: number
+          total_ttc?: number
+          total_tva?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_offers: {
         Row: {
           benefits: string[] | null
@@ -937,6 +1078,7 @@ export type Database = {
         | "duplicata"
       event_type: "meeting" | "interview" | "training" | "deadline" | "other"
       invoice_mode: "global" | "salarie" | "commande"
+      invoice_status: "draft" | "pending" | "sent" | "paid" | "cancelled"
       job_status: "active" | "closed" | "draft"
       job_type: "cdi" | "cdd" | "interim" | "freelance" | "stage"
       mission_status: "active" | "completed" | "pending" | "cancelled"
@@ -1095,6 +1237,7 @@ export const Constants = {
       ],
       event_type: ["meeting", "interview", "training", "deadline", "other"],
       invoice_mode: ["global", "salarie", "commande"],
+      invoice_status: ["draft", "pending", "sent", "paid", "cancelled"],
       job_status: ["active", "closed", "draft"],
       job_type: ["cdi", "cdd", "interim", "freelance", "stage"],
       mission_status: ["active", "completed", "pending", "cancelled"],

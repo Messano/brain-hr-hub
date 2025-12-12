@@ -28,6 +28,8 @@ import Settings from "./pages/Settings";
 import Clients from "./pages/Clients";
 import Personnel from "./pages/Personnel";
 import PersonnelDetail from "./pages/PersonnelDetail";
+import Invoices from "./pages/Invoices";
+import InvoiceDetail from "./pages/InvoiceDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +62,8 @@ const App = () => (
                 <Route path="personnel/:id" element={<PersonnelDetail />} />
                 <Route path="contracts" element={<Contracts />} />
                 <Route path="contracts/:id" element={<ContractDetail />} />
+                <Route path="invoices" element={<Invoices />} />
+                <Route path="invoices/:id" element={<InvoiceDetail />} />
                 <Route path="payroll" element={<Payroll />} />
                 <Route path="training" element={<Training />} />
                 <Route path="planning" element={<Planning />} />
