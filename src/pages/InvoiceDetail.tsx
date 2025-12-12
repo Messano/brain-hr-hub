@@ -49,7 +49,9 @@ import {
   FileText,
   Edit,
   Calculator,
+  Download,
 } from "lucide-react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -76,6 +78,7 @@ export default function InvoiceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [addLineOpen, setAddLineOpen] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const [newLine, setNewLine] = useState({
     personnel_id: "",
     contract_id: "",
@@ -236,6 +239,50 @@ export default function InvoiceDetail() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!id) return;
+    
+    setGeneratingPdf(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-invoice-pdf", {
+        body: { invoiceId: id },
+      });
+
+      if (error) {
+        console.error("Error generating PDF:", error);
+        toast.error("Erreur lors de la génération du PDF");
+        return;
+      }
+
+      if (data?.pdf) {
+        // Convert base64 to blob and download
+        const byteCharacters = atob(data.pdf);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: "application/pdf" });
+        
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = data.filename || `${invoice?.invoice_number}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        toast.success("PDF téléchargé avec succès");
+      }
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      toast.error("Erreur lors du téléchargement");
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   if (invoiceLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -271,6 +318,18 @@ export default function InvoiceDetail() {
             {invoice.clients?.raison_sociale}
           </p>
         </div>
+        <Button 
+          variant="outline" 
+          onClick={handleDownloadPdf}
+          disabled={generatingPdf}
+        >
+          {generatingPdf ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="mr-2 h-4 w-4" />
+          )}
+          Télécharger PDF
+        </Button>
         <Select
           value={invoice.status}
           onValueChange={(value) => handleStatusChange(value as InvoiceStatus)}
