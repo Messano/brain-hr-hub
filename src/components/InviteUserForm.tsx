@@ -52,7 +52,10 @@ export function InviteUserForm({ open, onClose, onSuccess }: InviteUserFormProps
     setIsLoading(true);
 
     try {
-      // Create user via Supabase Auth
+      // Store current session to restore after signup
+      const { data: currentSession } = await supabase.auth.getSession();
+      
+      // Create user via Supabase Auth admin invite
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -67,6 +70,9 @@ export function InviteUserForm({ open, onClose, onSuccess }: InviteUserFormProps
       if (error) throw error;
 
       if (data.user) {
+        // Wait a bit for the trigger to create profile and role
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // Update profile with additional info
         const { error: profileError } = await supabase
           .from('profiles')
@@ -91,6 +97,14 @@ export function InviteUserForm({ open, onClose, onSuccess }: InviteUserFormProps
           if (roleError) {
             console.error('Role update error:', roleError);
           }
+        }
+
+        // Restore original session if it was replaced
+        if (currentSession?.session) {
+          await supabase.auth.setSession({
+            access_token: currentSession.session.access_token,
+            refresh_token: currentSession.session.refresh_token
+          });
         }
 
         toast.success(`Utilisateur "${fullName}" créé avec succès`);
