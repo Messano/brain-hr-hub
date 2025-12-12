@@ -548,6 +548,7 @@ export type Database = {
           payment_date: string | null
           period_end: string
           period_start: string
+          personnel_id: string | null
           status: Database["public"]["Enums"]["payroll_status"] | null
           updated_at: string | null
         }
@@ -563,6 +564,7 @@ export type Database = {
           payment_date?: string | null
           period_end: string
           period_start: string
+          personnel_id?: string | null
           status?: Database["public"]["Enums"]["payroll_status"] | null
           updated_at?: string | null
         }
@@ -578,6 +580,7 @@ export type Database = {
           payment_date?: string | null
           period_end?: string
           period_start?: string
+          personnel_id?: string | null
           status?: Database["public"]["Enums"]["payroll_status"] | null
           updated_at?: string | null
         }
@@ -594,6 +597,13 @@ export type Database = {
             columns: ["mission_id"]
             isOneToOne: false
             referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payrolls_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
             referencedColumns: ["id"]
           },
         ]

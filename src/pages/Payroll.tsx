@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PayrollForm } from "@/components/PayrollForm";
-import { usePayrolls, useCreatePayroll, useUpdatePayroll, useDeletePayroll, usePayrollStats, Payroll } from "@/hooks/usePayrolls";
+import { usePayrolls, useCreatePayroll, useUpdatePayroll, useDeletePayroll, usePayrollStats, PayrollWithPersonnel } from "@/hooks/usePayrolls";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,9 +39,9 @@ export default function PayrollPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [periodFilter, setPeriodFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingPayroll, setEditingPayroll] = useState<Payroll | null>(null);
-  const [deletingPayroll, setDeletingPayroll] = useState<Payroll | null>(null);
-  const [viewingPayroll, setViewingPayroll] = useState<Payroll | null>(null);
+  const [editingPayroll, setEditingPayroll] = useState<PayrollWithPersonnel | null>(null);
+  const [deletingPayroll, setDeletingPayroll] = useState<PayrollWithPersonnel | null>(null);
+  const [viewingPayroll, setViewingPayroll] = useState<PayrollWithPersonnel | null>(null);
 
   const { data: payrolls, isLoading } = usePayrolls();
   const { data: stats } = usePayrollStats();
@@ -75,7 +75,9 @@ export default function PayrollPage() {
 
   const filteredPayrolls = payrolls?.filter((payroll) => {
     const monthLabel = getMonthLabel(payroll.period_start);
-    const matchesSearch = monthLabel.toLowerCase().includes(search.toLowerCase());
+    const personnelName = payroll.personnel ? `${payroll.personnel.nom} ${payroll.personnel.prenom} ${payroll.personnel.matricule}` : "";
+    const matchesSearch = monthLabel.toLowerCase().includes(search.toLowerCase()) || 
+                          personnelName.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || payroll.status === statusFilter;
     const matchesPeriod = periodFilter === "all" || monthLabel === periodFilter;
     return matchesSearch && matchesStatus && matchesPeriod;
@@ -98,7 +100,7 @@ export default function PayrollPage() {
     }
   };
 
-  const handleEdit = (payroll: Payroll) => {
+  const handleEdit = (payroll: PayrollWithPersonnel) => {
     setEditingPayroll(payroll);
     setIsFormOpen(true);
   };
@@ -218,11 +220,16 @@ export default function PayrollPage() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-lg capitalize">
-                      {getMonthLabel(payroll.period_start)}
+                    <h3 className="font-semibold text-lg">
+                      {payroll.personnel 
+                        ? `${payroll.personnel.nom} ${payroll.personnel.prenom}`
+                        : "Employé non assigné"}
                     </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Du {format(new Date(payroll.period_start), "d MMM", { locale: fr })} au {format(new Date(payroll.period_end), "d MMM yyyy", { locale: fr })}
+                    {payroll.personnel && (
+                      <p className="text-xs text-muted-foreground">{payroll.personnel.matricule}</p>
+                    )}
+                    <p className="text-muted-foreground text-sm capitalize">
+                      {getMonthLabel(payroll.period_start)} • Du {format(new Date(payroll.period_start), "d MMM", { locale: fr })} au {format(new Date(payroll.period_end), "d MMM yyyy", { locale: fr })}
                     </p>
                     <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                       {payroll.payment_date && (
@@ -302,6 +309,14 @@ export default function PayrollPage() {
               <div className="flex items-center gap-2">
                 {getStatusBadge(viewingPayroll.status)}
               </div>
+              {viewingPayroll.personnel && (
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <span className="font-medium">Employé:</span>
+                  <p className="text-muted-foreground">
+                    {viewingPayroll.personnel.matricule} - {viewingPayroll.personnel.nom} {viewingPayroll.personnel.prenom}
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium">Période:</span>
