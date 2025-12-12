@@ -335,11 +335,11 @@ export default function InvoiceDetail() {
                 Ajouter une ligne
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
               <DialogHeader>
                 <DialogTitle>Ajouter une ligne de facturation</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4 overflow-y-auto flex-1 pr-2">
                 <div className="space-y-2">
                   <Label>Intérimaire</Label>
                   <Select
