@@ -1,10 +1,11 @@
-import { Save, Bell, Shield, Palette, Database, Mail } from "lucide-react";
+import { Save, Bell, Shield, Database, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { DataExport } from "@/components/DataExport";
 
 export default function Settings() {
   return (
@@ -163,6 +164,9 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Data Export */}
+      <DataExport />
 
       {/* Save Button */}
       <div className="flex justify-end">
