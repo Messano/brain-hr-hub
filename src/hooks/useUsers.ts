@@ -121,12 +121,40 @@ export function useUsers() {
     }
   });
 
+  const deleteUser = useMutation({
+    mutationFn: async (userId: string) => {
+      // Delete user role first
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (roleError) throw roleError;
+
+      // Delete profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (profileError) throw profileError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Utilisateur supprimé avec succès');
+    },
+    onError: (error) => {
+      toast.error('Erreur lors de la suppression: ' + error.message);
+    }
+  });
+
   return {
     users,
     isLoading,
     error,
     updateProfile,
     updateRole,
-    toggleUserStatus
+    toggleUserStatus,
+    deleteUser
   };
 }

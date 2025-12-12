@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Search, Filter, Shield, Mail, Phone, UserCog, Users as UsersIcon, Crown } from "lucide-react";
+import { Plus, Search, Filter, Shield, Phone, UserCog, Users as UsersIcon, Crown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,14 +16,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Users() {
-  const { users, isLoading, updateProfile, updateRole, toggleUserStatus } = useUsers();
-  const { role: currentUserRole } = useAuth();
+  const { users, isLoading, updateProfile, updateRole, toggleUserStatus, deleteUser } = useUsers();
+  const { role: currentUserRole, user: currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [editingUser, setEditingUser] = useState<UserWithProfile | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserWithProfile | null>(null);
 
   const isSuperAdmin = currentUserRole === 'super_admin';
   const isAdmin = currentUserRole === 'admin' || isSuperAdmin;
@@ -86,6 +97,22 @@ export default function Users() {
 
   const handleToggleStatus = (user: UserWithProfile) => {
     toggleUserStatus.mutate({ userId: user.user_id, isActive: !user.is_active });
+  };
+
+  const handleDeleteUser = () => {
+    if (deletingUser) {
+      deleteUser.mutate(deletingUser.user_id);
+      setDeletingUser(null);
+    }
+  };
+
+  const canDeleteUser = (user: UserWithProfile) => {
+    // Super admin can delete anyone except themselves
+    // Admin can delete managers and users, but not admins or super_admins
+    if (currentUser?.id === user.user_id) return false;
+    if (isSuperAdmin) return true;
+    if (isAdmin && (user.role === 'user' || user.role === 'manager')) return true;
+    return false;
   };
 
   if (isLoading) {
@@ -271,6 +298,15 @@ export default function Users() {
                         >
                           Modifier
                         </Button>
+                        {canDeleteUser(user) && (
+                          <Button 
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setDeletingUser(user)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -290,6 +326,24 @@ export default function Users() {
           canEditRole={isSuperAdmin}
         />
       )}
+
+      <AlertDialog open={!!deletingUser} onOpenChange={() => setDeletingUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer l'utilisateur "{deletingUser?.full_name || 'Sans nom'}" ? 
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
