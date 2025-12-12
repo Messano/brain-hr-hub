@@ -13,7 +13,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, MapPin, Briefcase, Building, Clock, Euro, Send, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { z } from "zod";
 import type { Tables } from "@/integrations/supabase/types";
+
+// Validation schema for job application form
+const applicationSchema = z.object({
+  full_name: z.string()
+    .trim()
+    .min(2, "Le nom doit contenir au moins 2 caractères")
+    .max(100, "Le nom ne peut pas dépasser 100 caractères"),
+  email: z.string()
+    .trim()
+    .email("Adresse email invalide")
+    .max(255, "L'email ne peut pas dépasser 255 caractères"),
+  phone: z.string()
+    .max(20, "Le téléphone ne peut pas dépasser 20 caractères")
+    .optional()
+    .or(z.literal("")),
+  cover_letter: z.string()
+    .max(5000, "La lettre de motivation ne peut pas dépasser 5000 caractères")
+    .optional()
+    .or(z.literal("")),
+});
 
 type JobOffer = Tables<"job_offers"> & {
   clients?: { raison_sociale: string } | null;
@@ -92,14 +113,27 @@ export default function JobOfferDetail() {
     e.preventDefault();
     if (!job) return;
 
+    // Validate form data with zod schema
+    const validationResult = applicationSchema.safeParse(formData);
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast({
+        title: "Erreur de validation",
+        description: firstError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const validatedData = validationResult.data;
     setSubmitting(true);
     try {
       const { error } = await supabase.from("candidates").insert({
         job_offer_id: job.id,
-        full_name: formData.full_name,
-        email: formData.email,
-        phone: formData.phone || null,
-        cover_letter: formData.cover_letter || null,
+        full_name: validatedData.full_name,
+        email: validatedData.email,
+        phone: validatedData.phone || null,
+        cover_letter: validatedData.cover_letter || null,
         status: "new",
       });
 
@@ -113,7 +147,7 @@ export default function JobOfferDetail() {
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: error.message || "Impossible d'envoyer la candidature.",
+        description: "Impossible d'envoyer la candidature.",
         variant: "destructive",
       });
     } finally {
