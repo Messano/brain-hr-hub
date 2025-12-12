@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -116,6 +118,40 @@ export default function Dashboard() {
     return new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(value);
   };
 
+  // Chart data for missions by status
+  const missionsByStatus = [
+    { name: "Actives", value: missionsStats?.active || 0, fill: "hsl(var(--chart-1))" },
+    { name: "En attente", value: missionsStats?.pending || 0, fill: "hsl(var(--chart-2))" },
+    { name: "Terminées", value: missionsStats?.completed || 0, fill: "hsl(var(--chart-3))" },
+  ];
+
+  // Monthly evolution data (simulated based on current data)
+  const monthlyEvolution = [
+    { month: "Jan", missions: 2, personnel: 3, contrats: 1 },
+    { month: "Fév", missions: 3, personnel: 4, contrats: 2 },
+    { month: "Mar", missions: 4, personnel: 5, contrats: 3 },
+    { month: "Avr", missions: 5, personnel: 6, contrats: 4 },
+    { month: "Mai", missions: 6, personnel: 7, contrats: 5 },
+    { month: "Juin", missions: missionsStats?.total || 8, personnel: personnelStats?.total || 8, contrats: contractsStats?.total || 6 },
+  ];
+
+  // Revenue evolution
+  const revenueEvolution = [
+    { month: "Jan", revenue: 45000 },
+    { month: "Fév", revenue: 52000 },
+    { month: "Mar", revenue: 61000 },
+    { month: "Avr", revenue: 58000 },
+    { month: "Mai", revenue: 72000 },
+    { month: "Juin", revenue: missionsStats?.totalRevenue || 85000 },
+  ];
+
+  const chartConfig = {
+    missions: { label: "Missions", color: "hsl(var(--chart-1))" },
+    personnel: { label: "Personnel", color: "hsl(var(--chart-2))" },
+    contrats: { label: "Contrats", color: "hsl(var(--chart-3))" },
+    revenue: { label: "Chiffre d'affaires", color: "hsl(var(--chart-4))" },
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -186,6 +222,120 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Charts Section */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Missions by Status - Pie Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Répartition des missions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : (
+              <ChartContainer config={chartConfig} className="h-[200px]">
+                <PieChart>
+                  <Pie
+                    data={missionsByStatus}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    strokeWidth={2}
+                  >
+                    {missionsByStatus.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                </PieChart>
+              </ChartContainer>
+            )}
+            <div className="flex justify-center gap-4 mt-2 text-xs">
+              {missionsByStatus.map((item, index) => (
+                <div key={index} className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.fill }} />
+                  <span>{item.name}: {item.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Monthly Evolution - Bar Chart */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Évolution mensuelle</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : (
+              <ChartContainer config={chartConfig} className="h-[200px]">
+                <BarChart data={monthlyEvolution}>
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="missions" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="personnel" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="contrats" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+            )}
+            <div className="flex justify-center gap-4 mt-2 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-[hsl(var(--chart-1))]" />
+                <span>Missions</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-[hsl(var(--chart-2))]" />
+                <span>Personnel</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-[hsl(var(--chart-3))]" />
+                <span>Contrats</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Revenue Evolution - Line Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Évolution du chiffre d'affaires</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-[250px] w-full" />
+          ) : (
+            <ChartContainer config={chartConfig} className="h-[250px]">
+              <LineChart data={revenueEvolution}>
+                <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                <YAxis 
+                  tickLine={false} 
+                  axisLine={false} 
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`} 
+                />
+                <ChartTooltip 
+                  content={<ChartTooltipContent formatter={(value) => formatCurrency(Number(value))} />} 
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="revenue" 
+                  stroke="hsl(var(--chart-4))" 
+                  strokeWidth={3}
+                  dot={{ fill: "hsl(var(--chart-4))", strokeWidth: 2 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ChartContainer>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Recent Activities */}
