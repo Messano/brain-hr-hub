@@ -9,6 +9,7 @@ import { KPICard } from "@/components/KPICard";
 import { useUsers, UserWithProfile, AppRole } from "@/hooks/useUsers";
 import { useAuth } from "@/hooks/useAuth";
 import { UserForm } from "@/components/UserForm";
+import { InviteUserForm } from "@/components/InviteUserForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
@@ -26,8 +27,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Users() {
+  const queryClient = useQueryClient();
   const { users, isLoading, updateProfile, updateRole, toggleUserStatus, deleteUser } = useUsers();
   const { role: currentUserRole, user: currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,6 +38,7 @@ export default function Users() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [editingUser, setEditingUser] = useState<UserWithProfile | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserWithProfile | null>(null);
+  const [showInviteForm, setShowInviteForm] = useState(false);
 
   const isSuperAdmin = currentUserRole === 'super_admin';
   const isAdmin = currentUserRole === 'admin' || isSuperAdmin;
@@ -141,10 +145,10 @@ export default function Users() {
           <h1 className="text-3xl font-bold">Utilisateurs</h1>
           <p className="text-muted-foreground">Gestion des comptes utilisateurs et des droits d'accès</p>
         </div>
-        {isSuperAdmin && (
-          <Button className="flex items-center space-x-2" disabled>
+        {isAdmin && (
+          <Button className="flex items-center space-x-2" onClick={() => setShowInviteForm(true)}>
             <Plus className="w-4 h-4" />
-            <span>Inviter un utilisateur</span>
+            <span>Ajouter un utilisateur</span>
           </Button>
         )}
       </div>
@@ -326,6 +330,12 @@ export default function Users() {
           canEditRole={isSuperAdmin}
         />
       )}
+
+      <InviteUserForm
+        open={showInviteForm}
+        onClose={() => setShowInviteForm(false)}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
+      />
 
       <AlertDialog open={!!deletingUser} onOpenChange={() => setDeletingUser(null)}>
         <AlertDialogContent>
