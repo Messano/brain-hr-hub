@@ -7,17 +7,21 @@ export type Payroll = Tables<"payrolls">;
 export type PayrollInsert = TablesInsert<"payrolls">;
 export type PayrollUpdate = TablesUpdate<"payrolls">;
 
+export type PayrollWithPersonnel = Payroll & {
+  personnel: { id: string; nom: string; prenom: string; matricule: string } | null;
+};
+
 export function usePayrolls() {
   return useQuery({
     queryKey: ["payrolls"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payrolls")
-        .select("*")
+        .select("*, personnel(id, nom, prenom, matricule)")
         .order("period_start", { ascending: false });
 
       if (error) throw error;
-      return data as Payroll[];
+      return data as PayrollWithPersonnel[];
     },
   });
 }

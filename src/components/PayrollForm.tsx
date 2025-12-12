@@ -20,8 +20,11 @@ import {
 } from "@/components/ui/select";
 import { PayrollInsert, PayrollUpdate } from "@/hooks/usePayrolls";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const payrollSchema = z.object({
+  personnel_id: z.string().min(1, "L'employé est requis"),
   period_start: z.string().min(1, "La date de début est requise"),
   period_end: z.string().min(1, "La date de fin est requise"),
   base_salary: z.coerce.number().min(0, "Le salaire de base est requis"),
@@ -35,16 +38,30 @@ const payrollSchema = z.object({
 type PayrollFormData = z.infer<typeof payrollSchema>;
 
 interface PayrollFormProps {
-  payroll?: PayrollUpdate & { id?: string };
+  payroll?: PayrollUpdate & { id?: string; personnel_id?: string | null };
   onSubmit: (data: PayrollInsert | PayrollUpdate) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
 
 export function PayrollForm({ payroll, onSubmit, onCancel, isLoading }: PayrollFormProps) {
+  const { data: personnelList } = useQuery({
+    queryKey: ["personnel-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("personnel")
+        .select("id, nom, prenom, matricule")
+        .eq("is_active", true)
+        .order("nom");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const form = useForm<PayrollFormData>({
     resolver: zodResolver(payrollSchema),
     defaultValues: {
+      personnel_id: payroll?.personnel_id || "",
       period_start: payroll?.period_start || "",
       period_end: payroll?.period_end || "",
       base_salary: payroll?.base_salary ? Number(payroll.base_salary) : 0,
@@ -78,6 +95,31 @@ export function PayrollForm({ payroll, onSubmit, onCancel, isLoading }: PayrollF
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="personnel_id"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Employé *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un employé" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {personnelList?.map((person) => (
+                      <SelectItem key={person.id} value={person.id}>
+                        {person.matricule} - {person.nom} {person.prenom}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="period_start"
