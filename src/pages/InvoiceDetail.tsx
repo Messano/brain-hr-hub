@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -516,12 +517,16 @@ export default function InvoiceDetail() {
                     placeholder="Description de la ligne..."
                   />
                 </div>
-
-                <Button onClick={handleAddLine} className="w-full" disabled={createLine.isPending}>
-                  {createLine.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Ajouter la ligne
-                </Button>
               </div>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button variant="outline" onClick={() => setAddLineOpen(false)}>
+                  Annuler
+                </Button>
+                <Button onClick={handleAddLine} disabled={createLine.isPending}>
+                  {createLine.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Ajouter
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </CardHeader>
