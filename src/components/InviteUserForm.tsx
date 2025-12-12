@@ -70,7 +70,7 @@ export function InviteUserForm({ open, onClose, onSuccess }: InviteUserFormProps
       if (error) throw error;
 
       if (data.user) {
-        // Wait a bit for the trigger to create profile and role
+        // Wait a bit for the trigger to create profile
         await new Promise(resolve => setTimeout(resolve, 500));
         
         // Update profile with additional info
@@ -87,16 +87,14 @@ export function InviteUserForm({ open, onClose, onSuccess }: InviteUserFormProps
           console.error('Profile update error:', profileError);
         }
 
-        // Update role if not default user
-        if (role !== 'user') {
-          const { error: roleError } = await supabase
-            .from('user_roles')
-            .update({ role })
-            .eq('user_id', data.user.id);
+        // Insert the role (trigger no longer creates default role)
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({ user_id: data.user.id, role });
 
-          if (roleError) {
-            console.error('Role update error:', roleError);
-          }
+        if (roleError) {
+          console.error('Role insert error:', roleError);
+          toast.error('Erreur lors de l\'attribution du rôle');
         }
 
         // Restore original session if it was replaced
