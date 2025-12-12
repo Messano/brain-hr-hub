@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Edit, Trash2, User, Phone, MapPin, Calendar, CreditCard, FileText, Briefcase } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, User, Phone, MapPin, Calendar, CreditCard, FileText, Briefcase, FileSignature, ClipboardList } from "lucide-react";
 import PersonnelForm from "@/components/PersonnelForm";
 
 const PersonnelDetail = () => {
@@ -25,6 +26,34 @@ const PersonnelDetail = () => {
         .select("*")
         .eq("id", id)
         .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: contracts } = useQuery({
+    queryKey: ["personnel-contracts", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contracts")
+        .select("*, clients(raison_sociale), missions(title)")
+        .eq("personnel_id", id)
+        .order("date_debut", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: missions } = useQuery({
+    queryKey: ["personnel-missions", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("missions")
+        .select("*, clients(raison_sociale)")
+        .eq("personnel_id", id)
+        .order("start_date", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -347,6 +376,106 @@ const PersonnelDetail = () => {
                 <p className="font-medium">{person.domiciliation_bancaire || "-"}</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Missions associées */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              Missions associées ({missions?.length || 0})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {missions && missions.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Titre</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Date début</TableHead>
+                    <TableHead>Date fin</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {missions.map((mission: any) => (
+                    <TableRow key={mission.id}>
+                      <TableCell className="font-medium">{mission.title}</TableCell>
+                      <TableCell>{mission.clients?.raison_sociale || "-"}</TableCell>
+                      <TableCell>{formatDate(mission.start_date)}</TableCell>
+                      <TableCell>{formatDate(mission.end_date)}</TableCell>
+                      <TableCell>
+                        <Badge variant={mission.status === "active" ? "default" : "secondary"}>
+                          {mission.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Link to={`/admin/missions/${mission.id}`}>
+                          <Button variant="ghost" size="sm">Voir</Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">Aucune mission associée</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Contrats associés */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileSignature className="h-5 w-5" />
+              Contrats CTT associés ({contracts?.length || 0})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {contracts && contracts.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>N° Contrat</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Mission</TableHead>
+                    <TableHead>Date début</TableHead>
+                    <TableHead>Date fin</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contracts.map((contract: any) => (
+                    <TableRow key={contract.id}>
+                      <TableCell className="font-mono font-medium">{contract.numero_contrat}</TableCell>
+                      <TableCell>{contract.type_contrat}</TableCell>
+                      <TableCell>{contract.clients?.raison_sociale || "-"}</TableCell>
+                      <TableCell>{contract.missions?.title || "-"}</TableCell>
+                      <TableCell>{formatDate(contract.date_debut)}</TableCell>
+                      <TableCell>{formatDate(contract.date_fin)}</TableCell>
+                      <TableCell>
+                        <Badge variant={contract.status === "actif" ? "default" : "secondary"}>
+                          {contract.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Link to={`/admin/contracts/${contract.id}`}>
+                          <Button variant="ghost" size="sm">Voir</Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">Aucun contrat associé</p>
+            )}
           </CardContent>
         </Card>
       </div>
