@@ -102,14 +102,16 @@ export function DataExport() {
         const jsonContent = JSON.stringify(exportData, null, 2);
         downloadFile(jsonContent, `braincrm-export-${timestamp}.json`, "application/json");
       } else {
-        // For CSV, create a zip-like approach by downloading each table separately
-        // or combine them with table markers
+        // Combine all tables into a single CSV file with section markers
+        let combinedCsv = "";
         for (const [tableName, tableData] of Object.entries(exportData)) {
           if (tableData.length > 0) {
-            const csvContent = convertToCSV(tableData as Record<string, unknown>[]);
-            downloadFile(csvContent, `${tableName}-${timestamp}.csv`, "text/csv");
+            combinedCsv += `\n=== ${tableName.toUpperCase()} ===\n`;
+            combinedCsv += convertToCSV(tableData as Record<string, unknown>[]);
+            combinedCsv += "\n";
           }
         }
+        downloadFile(combinedCsv.trim(), `braincrm-export-${timestamp}.csv`, "text/csv");
       }
 
       toast.success("Export terminé avec succès");
@@ -210,8 +212,7 @@ export function DataExport() {
         </Button>
 
         <p className="text-sm text-muted-foreground">
-          Les données exportées incluront toutes les entrées de chaque table sélectionnée.
-          {format === "csv" && " Un fichier CSV sera téléchargé pour chaque table."}
+          Les données exportées incluront toutes les entrées de chaque table sélectionnée dans un seul fichier.
         </p>
       </CardContent>
     </Card>
