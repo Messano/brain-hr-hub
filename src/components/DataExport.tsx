@@ -73,21 +73,22 @@ export function DataExport() {
     return [headers.join(","), ...rows].join("\n");
   };
 
-  const escapeSQL = (value: unknown): string => {
+  const escapeMySQLValue = (value: unknown): string => {
     if (value === null || value === undefined) return "NULL";
     if (typeof value === "number") return String(value);
-    if (typeof value === "boolean") return value ? "TRUE" : "FALSE";
-    if (Array.isArray(value)) return `ARRAY[${value.map(v => escapeSQL(v)).join(",")}]`;
-    if (typeof value === "object") return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
-    return `'${String(value).replace(/'/g, "''")}'`;
+    if (typeof value === "boolean") return value ? "1" : "0";
+    if (Array.isArray(value)) return `'${JSON.stringify(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
+    if (typeof value === "object") return `'${JSON.stringify(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
+    return `'${String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
   };
 
   const convertToSQL = (tableName: string, data: Record<string, unknown>[]): string => {
     if (data.length === 0) return "";
     const columns = Object.keys(data[0]);
+    const escapedColumns = columns.map(col => `\`${col}\``);
     const inserts = data.map((row) => {
-      const values = columns.map((col) => escapeSQL(row[col]));
-      return `INSERT INTO public.${tableName} (${columns.join(", ")}) VALUES (${values.join(", ")});`;
+      const values = columns.map((col) => escapeMySQLValue(row[col]));
+      return `INSERT INTO \`${tableName}\` (${escapedColumns.join(", ")}) VALUES (${values.join(", ")});`;
     });
     return inserts.join("\n");
   };
@@ -156,15 +157,27 @@ export function DataExport() {
         }
         downloadFile(combinedCsv.trim(), `braincrm-export-${timestamp}.csv`, "text/csv");
       } else {
-        // SQL format
-        let sqlContent = `-- BrainCRM Database Export\n-- Generated: ${new Date().toISOString()}\n-- Tables: ${selectedTables.join(", ")}\n\n`;
+        // SQL format - MySQL compatible
+        let sqlContent = `-- BrainCRM Database Export (MySQL Compatible)\n`;
+        sqlContent += `-- Generated: ${new Date().toISOString()}\n`;
+        sqlContent += `-- Tables: ${selectedTables.join(", ")}\n\n`;
+        sqlContent += `SET FOREIGN_KEY_CHECKS = 0;\n`;
+        sqlContent += `SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\n`;
+        sqlContent += `SET AUTOCOMMIT = 0;\n`;
+        sqlContent += `START TRANSACTION;\n\n`;
+        
         for (const [tableName, tableData] of Object.entries(exportData)) {
           if (tableData.length > 0) {
+            sqlContent += `-- --------------------------------------------------------\n`;
             sqlContent += `-- Table: ${tableName}\n`;
+            sqlContent += `-- --------------------------------------------------------\n`;
             sqlContent += convertToSQL(tableName, tableData as Record<string, unknown>[]);
             sqlContent += "\n\n";
           }
         }
+        
+        sqlContent += `COMMIT;\n`;
+        sqlContent += `SET FOREIGN_KEY_CHECKS = 1;\n`;
         downloadFile(sqlContent.trim(), `braincrm-export-${timestamp}.sql`, "application/sql");
       }
 
