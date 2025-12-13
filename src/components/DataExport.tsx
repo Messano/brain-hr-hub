@@ -82,15 +82,93 @@ export function DataExport() {
     return `'${String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
   };
 
-  const convertToSQL = (tableName: string, data: Record<string, unknown>[]): string => {
+  const inferMySQLType = (columnName: string, sampleValue: unknown): string => {
+    // Check column name patterns first
+    if (columnName === "id") return "CHAR(36) NOT NULL";
+    if (columnName.endsWith("_id")) return "CHAR(36)";
+    if (columnName.includes("email")) return "VARCHAR(255)";
+    if (columnName.includes("phone") || columnName.includes("telephone")) return "VARCHAR(50)";
+    if (columnName.includes("url") || columnName.includes("adresse")) return "TEXT";
+    if (columnName.includes("description") || columnName.includes("notes") || columnName.includes("content")) return "TEXT";
+    if (columnName === "created_at" || columnName === "updated_at" || columnName.includes("_at")) return "DATETIME";
+    if (columnName.includes("date")) return "DATE";
+    if (columnName.startsWith("is_") || columnName.includes("active") || columnName.includes("completed")) return "TINYINT(1) DEFAULT 0";
+    if (columnName.includes("status") || columnName.includes("type") || columnName.includes("mode")) return "VARCHAR(50)";
+    if (columnName.includes("code") || columnName.includes("numero") || columnName.includes("matricule")) return "VARCHAR(100)";
+    if (columnName.includes("salary") || columnName.includes("amount") || columnName.includes("rate") || 
+        columnName.includes("montant") || columnName.includes("taux") || columnName.includes("coef") ||
+        columnName.includes("total") || columnName.includes("heures") || columnName.includes("prime") ||
+        columnName.includes("bonus") || columnName.includes("deductions")) return "DECIMAL(15,2)";
+    if (columnName.includes("rating") || columnName.includes("max_") || columnName.includes("duration") ||
+        columnName.includes("delai") || columnName.includes("duree")) return "INT";
+    
+    // Infer from sample value type
+    if (sampleValue === null || sampleValue === undefined) return "VARCHAR(255)";
+    if (typeof sampleValue === "number") {
+      if (Number.isInteger(sampleValue)) return "INT";
+      return "DECIMAL(15,2)";
+    }
+    if (typeof sampleValue === "boolean") return "TINYINT(1) DEFAULT 0";
+    if (typeof sampleValue === "string") {
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sampleValue)) {
+        return "CHAR(36)";
+      }
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(sampleValue)) {
+        return "DATETIME";
+      }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(sampleValue)) {
+        return "DATE";
+      }
+      if (sampleValue.length > 255) return "TEXT";
+      return "VARCHAR(255)";
+    }
+    if (Array.isArray(sampleValue)) return "JSON";
+    if (typeof sampleValue === "object") return "JSON";
+    return "VARCHAR(255)";
+  };
+
+  const generateCreateTable = (tableName: string, data: Record<string, unknown>[]): string => {
+    if (data.length === 0) return "";
+    
+    const sampleRow = data[0];
+    const columns = Object.keys(sampleRow);
+    
+    let sql = `DROP TABLE IF EXISTS \`${tableName}\`;\n`;
+    sql += `CREATE TABLE \`${tableName}\` (\n`;
+    
+    const columnDefs = columns.map((col) => {
+      const mysqlType = inferMySQLType(col, sampleRow[col]);
+      return `  \`${col}\` ${mysqlType}`;
+    });
+    
+    if (columns.includes("id")) {
+      columnDefs.push(`  PRIMARY KEY (\`id\`)`);
+    }
+    
+    sql += columnDefs.join(",\n");
+    sql += `\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n`;
+    
+    return sql;
+  };
+
+  const generateInserts = (tableName: string, data: Record<string, unknown>[]): string => {
     if (data.length === 0) return "";
     const columns = Object.keys(data[0]);
     const escapedColumns = columns.map(col => `\`${col}\``);
-    const inserts = data.map((row) => {
-      const values = columns.map((col) => escapeMySQLValue(row[col]));
-      return `INSERT INTO \`${tableName}\` (${escapedColumns.join(", ")}) VALUES (${values.join(", ")});`;
-    });
-    return inserts.join("\n");
+    
+    const batchSize = 100;
+    const batches: string[] = [];
+    
+    for (let i = 0; i < data.length; i += batchSize) {
+      const batch = data.slice(i, i + batchSize);
+      const values = batch.map((row) => {
+        const rowValues = columns.map((col) => escapeMySQLValue(row[col]));
+        return `(${rowValues.join(", ")})`;
+      });
+      batches.push(`INSERT INTO \`${tableName}\` (${escapedColumns.join(", ")}) VALUES\n${values.join(",\n")};`);
+    }
+    
+    return batches.join("\n\n");
   };
 
   const downloadFile = (content: string, filename: string, mimeType: string) => {
@@ -157,27 +235,46 @@ export function DataExport() {
         }
         downloadFile(combinedCsv.trim(), `braincrm-export-${timestamp}.csv`, "text/csv");
       } else {
-        // SQL format - MySQL compatible
-        let sqlContent = `-- BrainCRM Database Export (MySQL Compatible)\n`;
+        // SQL format - MySQL compatible with CREATE TABLE and INSERT
+        let sqlContent = `-- ============================================================\n`;
+        sqlContent += `-- BrainCRM Database Export (MySQL Compatible)\n`;
         sqlContent += `-- Generated: ${new Date().toISOString()}\n`;
-        sqlContent += `-- Tables: ${selectedTables.join(", ")}\n\n`;
+        sqlContent += `-- Tables: ${selectedTables.join(", ")}\n`;
+        sqlContent += `-- ============================================================\n\n`;
+        sqlContent += `SET NAMES utf8mb4;\n`;
         sqlContent += `SET FOREIGN_KEY_CHECKS = 0;\n`;
         sqlContent += `SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\n`;
         sqlContent += `SET AUTOCOMMIT = 0;\n`;
         sqlContent += `START TRANSACTION;\n\n`;
         
+        // Generate CREATE TABLE statements
+        sqlContent += `-- ============================================================\n`;
+        sqlContent += `-- TABLE STRUCTURE\n`;
+        sqlContent += `-- ============================================================\n\n`;
+        
         for (const [tableName, tableData] of Object.entries(exportData)) {
           if (tableData.length > 0) {
-            sqlContent += `-- --------------------------------------------------------\n`;
-            sqlContent += `-- Table: ${tableName}\n`;
-            sqlContent += `-- --------------------------------------------------------\n`;
-            sqlContent += convertToSQL(tableName, tableData as Record<string, unknown>[]);
+            sqlContent += generateCreateTable(tableName, tableData as Record<string, unknown>[]);
+            sqlContent += "\n";
+          }
+        }
+        
+        // Generate INSERT statements
+        sqlContent += `-- ============================================================\n`;
+        sqlContent += `-- DATA INSERTION\n`;
+        sqlContent += `-- ============================================================\n\n`;
+        
+        for (const [tableName, tableData] of Object.entries(exportData)) {
+          if (tableData.length > 0) {
+            sqlContent += `-- Data for table: ${tableName} (${tableData.length} rows)\n`;
+            sqlContent += generateInserts(tableName, tableData as Record<string, unknown>[]);
             sqlContent += "\n\n";
           }
         }
         
         sqlContent += `COMMIT;\n`;
         sqlContent += `SET FOREIGN_KEY_CHECKS = 1;\n`;
+        sqlContent += `\n-- Export completed successfully\n`;
         downloadFile(sqlContent.trim(), `braincrm-export-${timestamp}.sql`, "application/sql");
       }
 
