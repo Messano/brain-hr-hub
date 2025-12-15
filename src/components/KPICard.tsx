@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 
 interface KPICardProps {
   title: string;
@@ -27,7 +27,19 @@ export function KPICard({ title, value, change, description, icon, variant = "de
     destructive: "text-destructive",
   };
 
-  const isLucideIcon = typeof icon === "function";
+  const renderIcon = () => {
+    // If it's already a rendered React element, just apply styling wrapper
+    if (React.isValidElement(icon)) {
+      return <span className={cn("h-4 w-4", iconStyles[variant])}>{icon}</span>;
+    }
+    // If it's a Lucide icon component (function or ForwardRef)
+    if (typeof icon === "function" || (typeof icon === "object" && icon !== null && "$$typeof" in icon)) {
+      const Icon = icon as LucideIcon;
+      return <Icon className={cn("h-4 w-4", iconStyles[variant])} />;
+    }
+    // Fallback
+    return null;
+  };
 
   return (
     <Card className={cn("transition-all hover:shadow-md", variantStyles[variant])}>
@@ -35,14 +47,7 @@ export function KPICard({ title, value, change, description, icon, variant = "de
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        {isLucideIcon ? (
-          (() => {
-            const Icon = icon as LucideIcon;
-            return <Icon className={cn("h-4 w-4", iconStyles[variant])} />;
-          })()
-        ) : (
-          <span className={cn(iconStyles[variant])}>{icon}</span>
-        )}
+        {renderIcon()}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
