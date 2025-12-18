@@ -1,7 +1,6 @@
 import { Users, UserCheck, Briefcase, BookOpen, TrendingUp, Clock, FileText } from "lucide-react";
 import { KPICard } from "@/components/KPICard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { UrgentTasks } from "@/components/UrgentTasks";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -393,29 +393,7 @@ export default function Dashboard() {
       </div>
 
       {/* Urgent Tasks */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-destructive">Tâches urgentes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 border border-destructive/20 rounded-lg bg-destructive/5">
-              <div>
-                <p className="font-medium">Contrats à renouveler</p>
-                <p className="text-sm text-muted-foreground">{contractsStats?.draft || 0} contrats en brouillon à finaliser</p>
-              </div>
-              <Badge variant="destructive">Urgent</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 border border-warning/20 rounded-lg bg-warning/5">
-              <div>
-                <p className="font-medium">Missions en attente</p>
-                <p className="text-sm text-muted-foreground">{missionsStats?.pending || 0} missions à confirmer</p>
-              </div>
-              <Badge className="bg-warning text-warning-foreground">Attention</Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <UrgentTasks />
     </div>
   );
 }
