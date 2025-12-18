@@ -21,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { Tables, Database } from "@/integrations/supabase/types";
+import JobShareButtons from "@/components/JobShareButtons";
 
 type Client = Tables<"clients">;
 type JobOffer = Tables<"job_offers">;
@@ -35,7 +36,7 @@ export default function EditJobOffer() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
-
+  const [jobOfferData, setJobOfferData] = useState<JobOffer | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     client_id: "",
@@ -77,6 +78,7 @@ export default function EditJobOffer() {
         return;
       }
 
+      setJobOfferData(data);
       setFormData({
         title: data.title,
         client_id: data.client_id || "",
@@ -429,6 +431,11 @@ export default function EditJobOffer() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Share Buttons - Only show for active/published offers */}
+          {jobOfferData && formData.status === "active" && (
+            <JobShareButtons jobOffer={jobOfferData} />
+          )}
 
           <div className="flex justify-end space-x-4">
             <Button
