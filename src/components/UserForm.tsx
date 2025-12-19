@@ -55,6 +55,7 @@ export function UserForm({ user, open, onClose, onSave, canEditRole }: UserFormP
       case 'super_admin': return 'Super Administrateur';
       case 'admin': return 'Administrateur';
       case 'manager': return 'Manager';
+      case 'rh': return 'Ressources Humaines';
       case 'user': return 'Utilisateur';
     }
   };
@@ -103,10 +104,11 @@ export function UserForm({ user, open, onClose, onSave, canEditRole }: UserFormP
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un rôle" />
                 </SelectTrigger>
-                <SelectContent>
+              <SelectContent>
                   <SelectItem value="super_admin">{getRoleLabel('super_admin')}</SelectItem>
                   <SelectItem value="admin">{getRoleLabel('admin')}</SelectItem>
                   <SelectItem value="manager">{getRoleLabel('manager')}</SelectItem>
+                  <SelectItem value="rh">{getRoleLabel('rh')}</SelectItem>
                   <SelectItem value="user">{getRoleLabel('user')}</SelectItem>
                 </SelectContent>
               </Select>
