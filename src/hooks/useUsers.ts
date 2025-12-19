@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export type AppRole = 'super_admin' | 'admin' | 'manager' | 'user';
+export type AppRole = 'super_admin' | 'admin' | 'manager' | 'rh' | 'user';
 
 export interface UserWithProfile {
   id: string;

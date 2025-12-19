@@ -39,19 +39,19 @@ interface NavItem {
 // Define navigation with role-based access
 // super_admin has access to everything (handled in filter logic)
 const navigation: NavItem[] = [
-  { title: "Tableau de bord", url: "/admin", icon: BarChart3, allowedRoles: ['super_admin', 'admin', 'manager', 'user'] },
+  { title: "Tableau de bord", url: "/admin", icon: BarChart3, allowedRoles: ['super_admin', 'admin', 'manager', 'rh', 'user'] },
   { title: "Clients", url: "/admin/clients", icon: Building2, allowedRoles: ['super_admin', 'admin', 'manager'] },
-  { title: "Personnel", url: "/admin/personnel", icon: HardHat, allowedRoles: ['super_admin', 'admin', 'manager'] },
-  { title: "CTT", url: "/admin/contracts", icon: FileText, allowedRoles: ['super_admin', 'admin', 'manager'] },
+  { title: "Personnel", url: "/admin/personnel", icon: HardHat, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
+  { title: "CTT", url: "/admin/contracts", icon: FileText, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
   { title: "Facturation", url: "/admin/invoices", icon: Receipt, allowedRoles: ['super_admin', 'admin'] },
-  { title: "Recrutement", url: "/admin/recruitment", icon: Users, allowedRoles: ['super_admin', 'admin', 'manager'] },
-  { title: "Candidatures", url: "/admin/candidates", icon: UserCheck, allowedRoles: ['super_admin', 'admin', 'manager'] },
-  { title: "Missions & Contrats", url: "/admin/missions", icon: Briefcase, allowedRoles: ['super_admin', 'admin', 'manager'] },
-  { title: "Paie", url: "/admin/payroll", icon: CreditCard, allowedRoles: ['super_admin', 'admin'] },
-  { title: "Formations", url: "/admin/training", icon: BookOpen, allowedRoles: ['super_admin', 'admin', 'manager'] },
-  { title: "Planning", url: "/admin/planning", icon: Calendar, allowedRoles: ['super_admin', 'admin', 'manager', 'user'] },
+  { title: "Recrutement", url: "/admin/recruitment", icon: Users, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
+  { title: "Candidatures", url: "/admin/candidates", icon: UserCheck, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
+  { title: "Missions & Contrats", url: "/admin/missions", icon: Briefcase, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
+  { title: "Paie", url: "/admin/payroll", icon: CreditCard, allowedRoles: ['super_admin', 'admin', 'rh'] },
+  { title: "Formations", url: "/admin/training", icon: BookOpen, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
+  { title: "Planning", url: "/admin/planning", icon: Calendar, allowedRoles: ['super_admin', 'admin', 'manager', 'rh', 'user'] },
   { title: "Utilisateurs", url: "/admin/users", icon: Users, allowedRoles: ['super_admin', 'admin'] },
-  { title: "Rapports & Export", url: "/admin/reports", icon: FileText, allowedRoles: ['super_admin', 'admin', 'manager'] },
+  { title: "Rapports & Export", url: "/admin/reports", icon: FileText, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
   { title: "Paramètres", url: "/admin/settings", icon: Settings, allowedRoles: ['super_admin', 'admin'] },
 ];
 

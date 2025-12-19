@@ -64,7 +64,8 @@ export default function Users() {
     active: users.filter(u => u.is_active).length,
     superAdmins: users.filter(u => u.role === 'super_admin').length,
     admins: users.filter(u => u.role === 'admin').length,
-    managers: users.filter(u => u.role === 'manager').length
+    managers: users.filter(u => u.role === 'manager').length,
+    rh: users.filter(u => u.role === 'rh').length
   }), [users]);
 
   const getStatusBadge = (isActive: boolean) => {
@@ -82,6 +83,8 @@ export default function Users() {
         return <Badge variant="destructive">Administrateur</Badge>;
       case 'manager':
         return <Badge className="bg-warning text-warning-foreground">Manager</Badge>;
+      case 'rh':
+        return <Badge className="bg-primary text-primary-foreground">RH</Badge>;
       default:
         return <Badge variant="outline">Utilisateur</Badge>;
     }
@@ -154,7 +157,7 @@ export default function Users() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-6">
         <KPICard
           title="Total utilisateurs"
           value={stats.total.toString()}
@@ -183,6 +186,11 @@ export default function Users() {
           value={stats.managers.toString()}
           icon={UserCog}
         />
+        <KPICard
+          title="RH"
+          value={stats.rh.toString()}
+          icon={UsersIcon}
+        />
       </div>
 
       {/* Filters */}
@@ -210,6 +218,7 @@ export default function Users() {
                 <DropdownMenuItem onClick={() => setRoleFilter("super_admin")}>Super Admin</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setRoleFilter("admin")}>Administrateur</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setRoleFilter("manager")}>Manager</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setRoleFilter("rh")}>Ressources Humaines</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setRoleFilter("user")}>Utilisateur</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
