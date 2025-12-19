@@ -887,6 +887,27 @@ export type Database = {
         }
         Relationships: []
       }
+      read_notifications: {
+        Row: {
+          id: string
+          notification_key: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notification_key: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notification_key?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           created_at: string | null
