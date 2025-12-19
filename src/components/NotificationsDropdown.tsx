@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, FileText, Users, Briefcase, Calendar, CreditCard, AlertTriangle, Check } from "lucide-react";
+import { Bell, FileText, Users, Briefcase, Calendar, CreditCard, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow, parseISO, isBefore, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Notification {
   id: string;
@@ -28,10 +28,67 @@ interface Notification {
 
 export function NotificationsDropdown() {
   const navigate = useNavigate();
-  const [readNotifications, setReadNotifications] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const today = new Date();
   const in7Days = addDays(today, 7);
   const in30Days = addDays(today, 30);
+
+  // Fetch read notifications from database
+  const { data: readNotificationsData } = useQuery({
+    queryKey: ['read-notifications', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('read_notifications')
+        .select('notification_key')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return data?.map(n => n.notification_key) || [];
+    },
+    enabled: !!user?.id
+  });
+
+  const readNotifications = new Set(readNotificationsData || []);
+
+  // Mutation to mark notification as read
+  const markAsReadMutation = useMutation({
+    mutationFn: async (notificationKey: string) => {
+      if (!user?.id) return;
+      const { error } = await supabase
+        .from('read_notifications')
+        .upsert({ 
+          user_id: user.id, 
+          notification_key: notificationKey 
+        }, { 
+          onConflict: 'user_id,notification_key' 
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['read-notifications', user?.id] });
+    }
+  });
+
+  // Mutation to mark all as read
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async (notificationKeys: string[]) => {
+      if (!user?.id || notificationKeys.length === 0) return;
+      const { error } = await supabase
+        .from('read_notifications')
+        .upsert(
+          notificationKeys.map(key => ({ 
+            user_id: user.id, 
+            notification_key: key 
+          })),
+          { onConflict: 'user_id,notification_key' }
+        );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['read-notifications', user?.id] });
+    }
+  });
 
   // Fetch recent candidates
   const { data: recentCandidates } = useQuery({
@@ -198,14 +255,21 @@ export function NotificationsDropdown() {
   const unreadCount = notifications.filter(n => !readNotifications.has(n.id)).length;
 
   const handleNotificationClick = (notification: Notification) => {
-    setReadNotifications(prev => new Set([...prev, notification.id]));
+    if (!readNotifications.has(notification.id)) {
+      markAsReadMutation.mutate(notification.id);
+    }
     if (notification.link) {
       navigate(notification.link);
     }
   };
 
   const markAllAsRead = () => {
-    setReadNotifications(new Set(notifications.map(n => n.id)));
+    const unreadKeys = notifications
+      .filter(n => !readNotifications.has(n.id))
+      .map(n => n.id);
+    if (unreadKeys.length > 0) {
+      markAllAsReadMutation.mutate(unreadKeys);
+    }
   };
 
   const getTypeStyles = (type: Notification["type"]) => {
