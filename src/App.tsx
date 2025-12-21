@@ -25,6 +25,7 @@ import Planning from "./pages/Planning";
 import Users from "./pages/Users";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import RolePermissions from "./pages/RolePermissions";
 import Clients from "./pages/Clients";
 import Personnel from "./pages/Personnel";
 import PersonnelDetail from "./pages/PersonnelDetail";
@@ -79,6 +80,7 @@ const App = () => (
                   <Route path="payroll" element={<Payroll />} />
                   <Route path="users" element={<Users />} />
                   <Route path="settings" element={<Settings />} />
+                  <Route path="permissions" element={<RolePermissions />} />
                 </Route>
               </Route>
             </Route>

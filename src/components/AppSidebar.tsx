@@ -8,6 +8,7 @@ import {
   BookOpen,
   Calendar,
   Settings,
+  Shield,
   FileText,
   Brain,
   Building2,
@@ -52,6 +53,8 @@ const navigation: NavItem[] = [
   { title: "Planning", url: "/admin/planning", icon: Calendar, allowedRoles: ['super_admin', 'admin', 'manager', 'rh', 'user'] },
   { title: "Utilisateurs", url: "/admin/users", icon: Users, allowedRoles: ['super_admin', 'admin'] },
   { title: "Rapports & Export", url: "/admin/reports", icon: FileText, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
+  { title: "Utilisateurs", url: "/admin/users", icon: Users, allowedRoles: ['super_admin', 'admin'] },
+  { title: "Permissions", url: "/admin/permissions", icon: Shield, allowedRoles: ['super_admin', 'admin'] },
   { title: "Paramètres", url: "/admin/settings", icon: Settings, allowedRoles: ['super_admin', 'admin'] },
 ];
 
