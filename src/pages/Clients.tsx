@@ -41,6 +41,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { ClientForm } from "@/components/ClientForm";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type Client = Tables<"clients">;
 type ClientInsert = TablesInsert<"clients">;
@@ -89,6 +90,7 @@ export default function Clients() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [newClient, setNewClient] = useState<Omit<ClientInsert, "code">>(emptyClient);
   const [saving, setSaving] = useState(false);
+  const { canCreate, canEdit, canDelete } = usePermissions();
 
   useEffect(() => {
     fetchClients();
@@ -270,34 +272,36 @@ export default function Clients() {
             Gestion des clients et de leurs paramètres
           </p>
         </div>
-        <Sheet open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <SheetTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              Nouveau client
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Ajouter un nouveau client</SheetTitle>
-              <SheetDescription>
-                Remplissez les informations du nouveau client
-              </SheetDescription>
-            </SheetHeader>
-            <div className="mt-6">
-              <ClientForm client={newClient} onChange={handleNewClientChange} />
-              <div className="flex justify-end gap-2 mt-6">
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  Annuler
-                </Button>
-                <Button onClick={handleAddClient} disabled={saving}>
-                  {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Ajouter
-                </Button>
+        {canCreate('clients') && (
+          <Sheet open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <SheetTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
+                Nouveau client
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>Ajouter un nouveau client</SheetTitle>
+                <SheetDescription>
+                  Remplissez les informations du nouveau client
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6">
+                <ClientForm client={newClient} onChange={handleNewClientChange} />
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                    Annuler
+                  </Button>
+                  <Button onClick={handleAddClient} disabled={saving}>
+                    {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Ajouter
+                  </Button>
+                </div>
               </div>
-            </div>
-          </SheetContent>
-        </Sheet>
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -461,23 +465,27 @@ export default function Clients() {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setSelectedClient(client);
-                            setIsEditDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteClient(client.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
+                        {canEdit('clients') && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedClient(client);
+                              setIsEditDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {canDelete('clients') && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClient(client.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
