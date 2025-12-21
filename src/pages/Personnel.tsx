@@ -12,6 +12,8 @@ import { Plus, Search, Users, UserCheck, UserX, Filter, Phone, MapPin, Calendar,
 import { Link } from "react-router-dom";
 import { KPICard } from "@/components/KPICard";
 import PersonnelForm from "@/components/PersonnelForm";
+import { CanCreate } from "@/components/PermissionGuard";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type Personnel = {
   id: string;
@@ -32,6 +34,7 @@ const Personnel = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { canCreate } = usePermissions();
 
   const { data: personnel = [], isLoading } = useQuery({
     queryKey: ["personnel", searchQuery, statusFilter],
@@ -105,23 +108,25 @@ const Personnel = () => {
           <h1 className="text-3xl font-bold text-foreground">Personnel / Intérimaires</h1>
           <p className="text-muted-foreground">Gestion des intérimaires et du personnel temporaire</p>
         </div>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvel intérimaire
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Nouvel intérimaire</DialogTitle>
-            </DialogHeader>
-            <PersonnelForm
-              onSubmit={(data) => createMutation.mutate(data)}
-              isLoading={createMutation.isPending}
-            />
-          </DialogContent>
-        </Dialog>
+        <CanCreate module="personnel">
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nouvel intérimaire
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Nouvel intérimaire</DialogTitle>
+              </DialogHeader>
+              <PersonnelForm
+                onSubmit={(data) => createMutation.mutate(data)}
+                isLoading={createMutation.isPending}
+              />
+            </DialogContent>
+          </Dialog>
+        </CanCreate>
       </div>
 
       {/* KPIs */}
