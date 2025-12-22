@@ -16,7 +16,8 @@ import {
   Receipt,
   LucideIcon,
 } from "lucide-react";
-import { useAuth, AppRole } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 
 import {
   Sidebar,
@@ -34,45 +35,46 @@ interface NavItem {
   title: string;
   url: string;
   icon: LucideIcon;
-  allowedRoles: AppRole[];
+  module: string | null; // null = always visible for authenticated users
 }
 
-// Define navigation with role-based access
-// super_admin has access to everything (handled in filter logic)
+// Define navigation with module mapping for permission checks
 const navigation: NavItem[] = [
-  { title: "Tableau de bord", url: "/admin", icon: BarChart3, allowedRoles: ['super_admin', 'admin', 'manager', 'rh', 'user'] },
-  { title: "Clients", url: "/admin/clients", icon: Building2, allowedRoles: ['super_admin', 'admin', 'manager'] },
-  { title: "Personnel", url: "/admin/personnel", icon: HardHat, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
-  { title: "CTT", url: "/admin/contracts", icon: FileText, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
-  { title: "Facturation", url: "/admin/invoices", icon: Receipt, allowedRoles: ['super_admin', 'admin'] },
-  { title: "Recrutement", url: "/admin/recruitment", icon: Users, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
-  { title: "Candidatures", url: "/admin/candidates", icon: UserCheck, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
-  { title: "Missions & Contrats", url: "/admin/missions", icon: Briefcase, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
-  { title: "Paie", url: "/admin/payroll", icon: CreditCard, allowedRoles: ['super_admin', 'admin', 'rh'] },
-  { title: "Formations", url: "/admin/training", icon: BookOpen, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
-  { title: "Planning", url: "/admin/planning", icon: Calendar, allowedRoles: ['super_admin', 'admin', 'manager', 'rh', 'user'] },
-  { title: "Utilisateurs", url: "/admin/users", icon: Users, allowedRoles: ['super_admin', 'admin'] },
-  { title: "Rapports & Export", url: "/admin/reports", icon: FileText, allowedRoles: ['super_admin', 'admin', 'manager', 'rh'] },
-  { title: "Utilisateurs", url: "/admin/users", icon: Users, allowedRoles: ['super_admin', 'admin'] },
-  { title: "Permissions", url: "/admin/permissions", icon: Shield, allowedRoles: ['super_admin', 'admin'] },
-  { title: "Paramètres", url: "/admin/settings", icon: Settings, allowedRoles: ['super_admin', 'admin'] },
+  { title: "Tableau de bord", url: "/admin", icon: BarChart3, module: "dashboard" },
+  { title: "Clients", url: "/admin/clients", icon: Building2, module: "clients" },
+  { title: "Personnel", url: "/admin/personnel", icon: HardHat, module: "personnel" },
+  { title: "CTT", url: "/admin/contracts", icon: FileText, module: "contracts" },
+  { title: "Facturation", url: "/admin/invoices", icon: Receipt, module: "invoices" },
+  { title: "Recrutement", url: "/admin/recruitment", icon: Users, module: "recruitment" },
+  { title: "Candidatures", url: "/admin/candidates", icon: UserCheck, module: "candidates" },
+  { title: "Missions & Contrats", url: "/admin/missions", icon: Briefcase, module: "missions" },
+  { title: "Paie", url: "/admin/payroll", icon: CreditCard, module: "payroll" },
+  { title: "Formations", url: "/admin/training", icon: BookOpen, module: "training" },
+  { title: "Planning", url: "/admin/planning", icon: Calendar, module: "planning" },
+  { title: "Rapports & Export", url: "/admin/reports", icon: FileText, module: "reports" },
+  { title: "Utilisateurs", url: "/admin/users", icon: Users, module: "users" },
+  { title: "Permissions", url: "/admin/permissions", icon: Shield, module: "permissions" },
+  { title: "Paramètres", url: "/admin/settings", icon: Settings, module: "settings" },
 ];
 
 export function AppSidebar() {
   const { open } = useSidebar();
   const location = useLocation();
-  const { role, isSuperAdmin } = useAuth();
+  const { isSuperAdmin } = useAuth();
+  const { canView, isLoading } = usePermissions();
 
   const isActive = (path: string) => {
     return location.pathname === path || (path !== "/admin" && location.pathname.startsWith(path));
   };
 
-  // Filter navigation items based on user role
+  // Filter navigation items based on permissions
   const filteredNavigation = navigation.filter((item) => {
     // Super admin always sees everything
     if (isSuperAdmin) return true;
-    // Check if user's role is in the allowed roles
-    return role && item.allowedRoles.includes(role);
+    // If loading permissions, hide items temporarily
+    if (isLoading) return false;
+    // Check view permission for the module
+    return item.module ? canView(item.module) : true;
   });
 
   return (
