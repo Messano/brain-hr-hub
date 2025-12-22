@@ -30,10 +30,11 @@ const MODULES = [
   { key: 'payroll', label: 'Paie', icon: '💵' },
   { key: 'recruitment', label: 'Recrutement', icon: '📋' },
   { key: 'candidates', label: 'Candidatures', icon: '📝' },
-  { key: 'trainings', label: 'Formations', icon: '🎓' },
+  { key: 'training', label: 'Formations', icon: '🎓' },
   { key: 'planning', label: 'Planning', icon: '📅' },
   { key: 'reports', label: 'Rapports', icon: '📈' },
   { key: 'users', label: 'Utilisateurs', icon: '👤' },
+  { key: 'permissions', label: 'Permissions', icon: '🔐' },
   { key: 'settings', label: 'Paramètres', icon: '⚙️' },
 ];
 
