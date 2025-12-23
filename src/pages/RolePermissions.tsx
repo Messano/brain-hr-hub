@@ -34,6 +34,7 @@ const MODULES = [
   { key: 'planning', label: 'Planning', icon: '📅' },
   { key: 'reports', label: 'Rapports', icon: '📈' },
   { key: 'users', label: 'Utilisateurs', icon: '👤' },
+  { key: 'audit_logs', label: 'Journal d\'audit', icon: '📋' },
   { key: 'permissions', label: 'Permissions', icon: '🔐' },
   { key: 'settings', label: 'Paramètres', icon: '⚙️' },
 ];

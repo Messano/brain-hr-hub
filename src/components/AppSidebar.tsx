@@ -14,6 +14,7 @@ import {
   Building2,
   HardHat,
   Receipt,
+  ClipboardList,
   LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,6 +54,7 @@ const navigation: NavItem[] = [
   { title: "Planning", url: "/admin/planning", icon: Calendar, module: "planning" },
   { title: "Rapports & Export", url: "/admin/reports", icon: FileText, module: "reports" },
   { title: "Utilisateurs", url: "/admin/users", icon: Users, module: "users" },
+  { title: "Journal d'audit", url: "/admin/audit-logs", icon: ClipboardList, module: "audit_logs" },
   { title: "Permissions", url: "/admin/permissions", icon: Shield, module: "permissions" },
   { title: "Paramètres", url: "/admin/settings", icon: Settings, module: "settings" },
 ];
