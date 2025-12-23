@@ -31,6 +31,7 @@ import Personnel from "./pages/Personnel";
 import PersonnelDetail from "./pages/PersonnelDetail";
 import Invoices from "./pages/Invoices";
 import InvoiceDetail from "./pages/InvoiceDetail";
+import AuditLogs from "./pages/AuditLogs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,7 @@ const App = () => (
                   <Route path="invoices/:id" element={<InvoiceDetail />} />
                   <Route path="payroll" element={<Payroll />} />
                   <Route path="users" element={<Users />} />
+                  <Route path="audit-logs" element={<AuditLogs />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="permissions" element={<RolePermissions />} />
                 </Route>
