@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow, parseISO, isBefore, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface Notification {
   id: string;
@@ -33,6 +34,43 @@ export function NotificationsDropdown() {
   const today = new Date();
   const in7Days = addDays(today, 7);
   const in30Days = addDays(today, 30);
+  
+  const [isRinging, setIsRinging] = useState(false);
+  const previousUnreadCountRef = useRef<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Create audio element for notification sound
+  useEffect(() => {
+    // Use a simple beep sound encoded as base64
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    audioRef.current = null; // We'll use Web Audio API instead
+    
+    return () => {
+      audioContext.close();
+    };
+  }, []);
+
+  const playNotificationSound = useCallback(() => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.log('Audio not supported');
+    }
+  }, []);
 
   // Fetch read notifications from database
   const { data: readNotificationsData } = useQuery({
@@ -292,6 +330,23 @@ export function NotificationsDropdown() {
 
   const unreadCount = notifications.filter(n => !readNotifications.has(n.id)).length;
 
+  // Detect new notifications and trigger animation + sound
+  useEffect(() => {
+    if (previousUnreadCountRef.current !== null && unreadCount > previousUnreadCountRef.current) {
+      // New notification arrived
+      setIsRinging(true);
+      playNotificationSound();
+      
+      // Stop animation after it completes
+      const timer = setTimeout(() => {
+        setIsRinging(false);
+      }, 800);
+      
+      return () => clearTimeout(timer);
+    }
+    previousUnreadCountRef.current = unreadCount;
+  }, [unreadCount, playNotificationSound]);
+
   const handleNotificationClick = (notification: Notification) => {
     if (!readNotifications.has(notification.id)) {
       markAsReadMutation.mutate(notification.id);
@@ -327,9 +382,9 @@ export function NotificationsDropdown() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
+          <Bell className={`h-4 w-4 ${isRinging ? 'animate-bell-ring' : ''} ${unreadCount > 0 ? 'text-primary' : ''}`} />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs">
+            <Badge className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs animate-notification-pulse">
               {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
           )}
