@@ -16,6 +16,7 @@ import { formatDistanceToNow, parseISO, isBefore, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 
 interface Notification {
   id: string;
@@ -31,6 +32,7 @@ export function NotificationsDropdown() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { soundEnabled } = useNotificationPreferences();
   const today = new Date();
   const in7Days = addDays(today, 7);
   const in30Days = addDays(today, 30);
@@ -335,7 +337,9 @@ export function NotificationsDropdown() {
     if (previousUnreadCountRef.current !== null && unreadCount > previousUnreadCountRef.current) {
       // New notification arrived
       setIsRinging(true);
-      playNotificationSound();
+      if (soundEnabled) {
+        playNotificationSound();
+      }
       
       // Stop animation after it completes
       const timer = setTimeout(() => {
@@ -345,7 +349,7 @@ export function NotificationsDropdown() {
       return () => clearTimeout(timer);
     }
     previousUnreadCountRef.current = unreadCount;
-  }, [unreadCount, playNotificationSound]);
+  }, [unreadCount, playNotificationSound, soundEnabled]);
 
   const handleNotificationClick = (notification: Notification) => {
     if (!readNotifications.has(notification.id)) {
