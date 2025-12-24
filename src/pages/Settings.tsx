@@ -1,4 +1,4 @@
-import { Save, Bell, Shield, Database, Mail } from "lucide-react";
+import { Save, Bell, Shield, Database, Mail, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { DataExport } from "@/components/DataExport";
+import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 
 export default function Settings() {
+  const { soundEnabled, setSoundEnabled } = useNotificationPreferences();
+
   return (
     <div className="space-y-6">
       <div>
@@ -58,6 +61,21 @@ export default function Settings() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Volume2 className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <Label htmlFor="sound-notifications">Sons de notification</Label>
+                <p className="text-sm text-muted-foreground">Jouer un son lors de l'arrivée de nouvelles notifications</p>
+              </div>
+            </div>
+            <Switch 
+              id="sound-notifications" 
+              checked={soundEnabled}
+              onCheckedChange={setSoundEnabled}
+            />
+          </div>
+          <Separator />
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="email-notifications">Notifications par email</Label>
