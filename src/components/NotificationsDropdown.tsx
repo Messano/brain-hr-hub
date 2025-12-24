@@ -65,7 +65,25 @@ export function NotificationsDropdown() {
         });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onMutate: async (notificationKey: string) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['read-notifications', user?.id] });
+      
+      // Snapshot the previous value
+      const previousReadNotifications = queryClient.getQueryData<string[]>(['read-notifications', user?.id]);
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData<string[]>(['read-notifications', user?.id], (old) => {
+        return [...(old || []), notificationKey];
+      });
+      
+      return { previousReadNotifications };
+    },
+    onError: (err, notificationKey, context) => {
+      // Rollback on error
+      queryClient.setQueryData(['read-notifications', user?.id], context?.previousReadNotifications);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['read-notifications', user?.id] });
     }
   });
@@ -85,7 +103,27 @@ export function NotificationsDropdown() {
         );
       if (error) throw error;
     },
-    onSuccess: () => {
+    onMutate: async (notificationKeys: string[]) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['read-notifications', user?.id] });
+      
+      // Snapshot the previous value
+      const previousReadNotifications = queryClient.getQueryData<string[]>(['read-notifications', user?.id]);
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData<string[]>(['read-notifications', user?.id], (old) => {
+        const existingKeys = new Set(old || []);
+        notificationKeys.forEach(key => existingKeys.add(key));
+        return Array.from(existingKeys);
+      });
+      
+      return { previousReadNotifications };
+    },
+    onError: (err, notificationKeys, context) => {
+      // Rollback on error
+      queryClient.setQueryData(['read-notifications', user?.id], context?.previousReadNotifications);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['read-notifications', user?.id] });
     }
   });
